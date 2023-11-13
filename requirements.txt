@@ -1,0 +1,6 @@
+numpy
+sympy
+nerva-jax
+nerva-numpy
+nerva-tensorflow
+nerva-torch
