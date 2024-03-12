@@ -170,7 +170,6 @@ class TestSoftmaxDerivation(TestCase):
 
     def test_example(self):
         from sympy import symarray
-        softmax = softmax
         K = 3
         z = Matrix(symarray('z', (1, K), real=True))  # create a symbolic 1xK vector
         y = softmax(z)

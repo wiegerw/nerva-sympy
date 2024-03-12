@@ -4,8 +4,8 @@
 
 import sympy as sp
 from nerva_numpy.activation_functions import AllReLUActivation, HyperbolicTangentActivation, \
-    LeakyReLUActivation, ReLUActivation, \
-    SReLUActivation, SigmoidActivation
+    LeakyReLUActivation, ReLUActivation, SReLUActivation, SigmoidActivation
+from nerva_sympy.utilities import parse_function_call
 from sympy import Lambda, Piecewise
 
 Matrix = sp.Matrix

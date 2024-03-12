@@ -8,9 +8,11 @@
 
 from unittest import TestCase
 
-from nerva_sympy.matrix_operations import *
-from utilities import equal_matrices, matrix, to_matrix, to_number
 import sympy as sp
+from nerva_sympy.matrix_operations import *
+from nerva_sympy.softmax_functions import softmax, log_softmax
+
+from utilities import equal_matrices, matrix, to_matrix, to_number
 
 Matrix = sp.Matrix
 
@@ -117,9 +119,6 @@ class TestSoftmaxLayerDerivation(TestCase):
 
         L = lambda Y: to_matrix(squared_error_rows(Y))
 
-        def softmax(z: Matrix) -> Matrix:
-            return reciprocal(rows_sum(exp(z))) * exp(z)
-
         i = 1
         y_i = y.row(i)
         z_i = z.row(i)
@@ -158,12 +157,6 @@ class TestLogSoftmaxLayerDerivation(TestCase):
         Y = log_softmax(Z)
 
         L = lambda Y: to_matrix(squared_error_rows(Y))
-
-        def softmax(z: Matrix) -> Matrix:
-            return reciprocal(rows_sum(exp(z))) * exp(z)
-
-        def log_softmax(z: Matrix) -> Matrix:
-            return log(softmax(z))
 
         i = 1
         y_i = y.row(i)
