@@ -15,11 +15,8 @@ from utilities import equal_matrices, matrix, squared_error
 
 class TestBatchNormalizationLayers(TestCase):
 
-    def test_simple_batch_normalization_layer(self):
-        D = 3
-        N = 2
-        K = D                # K and D are always equal in batch normalization
-        loss = elements_sum  # squared_error seems too complicated
+    def _test_simple_batch_normalization_layer(self, D, N, loss):
+        K = D  # K and D are always equal in batch normalization
 
         # variables
         x = matrix('x', N, D)
@@ -43,11 +40,12 @@ class TestBatchNormalizationLayers(TestCase):
 
         self.assertTrue(equal_matrices(DX, DX1))
 
-    def test_affine_layer(self):
-        D = 3
-        N = 2
+    def test_simple_batch_normalization_layer(self):
+        self._test_simple_batch_normalization_layer(2, 3, loss=elements_sum)
+        self._test_simple_batch_normalization_layer(3, 2, loss=elements_sum)
+
+    def _test_affine_layer(self, D, N, loss):
         K = D
-        loss = squared_error
 
         # variables
         x = matrix('x', N, D)
@@ -76,11 +74,13 @@ class TestBatchNormalizationLayers(TestCase):
         self.assertTrue(equal_matrices(Dbeta, Dbeta1))
         self.assertTrue(equal_matrices(Dgamma, Dgamma1))
 
-    def test_batch_normalization_layer(self):
-        D = 3
-        N = 2
-        K = D                # K and D are always equal in batch normalization
-        loss = elements_sum  # squared_error seems too complicated
+    def test_affine_layer(self):
+        for loss in [elements_sum, squared_error]:
+            self._test_affine_layer(D=3, N=2, loss=loss)
+            self._test_affine_layer(D=2, N=3, loss=loss)
+
+    def _test_batch_normalization_layer(self, D, N, loss):
+        K = D  # K and D are always equal in batch normalization
 
         # variables
         x = matrix('x', N, D)
@@ -118,13 +118,13 @@ class TestBatchNormalizationLayers(TestCase):
         self.assertTrue(equal_matrices(Dgamma, Dgamma1))
         self.assertTrue(equal_matrices(DZ, DZ1))
 
-    def test_yeh_batch_normalization_layer(self):
-        # see https://chrisyeh96.github.io/2017/08/28/deriving-batchnorm-backprop.html
+    def test_batch_normalization_layer(self):
+        self._test_batch_normalization_layer(2, 3, loss=elements_sum)
+        self._test_batch_normalization_layer(3, 2, loss=elements_sum)
 
-        D = 3
-        N = 2
-        K = D                # K and D are always equal in batch normalization
-        loss = elements_sum  # squared_error seems too complicated
+    def _test_yeh_batch_normalization_layer(self, D, N, loss):
+        # see https://chrisyeh96.github.io/2017/08/28/deriving-batchnorm-backprop.html
+        K = D  # K and D are always equal in batch normalization
 
         # variables
         x = matrix('x', N, D)
@@ -161,6 +161,10 @@ class TestBatchNormalizationLayers(TestCase):
         self.assertTrue(equal_matrices(Dbeta, Dbeta1))
         self.assertTrue(equal_matrices(Dgamma, Dgamma1))
         self.assertTrue(equal_matrices(DZ, DZ1))
+
+    def test_yeh_batch_normalization_layer(self):
+        self._test_yeh_batch_normalization_layer(2, 3, loss=elements_sum)
+        self._test_yeh_batch_normalization_layer(3, 2, loss=elements_sum)
 
 
 if __name__ == '__main__':

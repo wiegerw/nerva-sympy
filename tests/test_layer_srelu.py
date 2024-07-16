@@ -14,12 +14,7 @@ from utilities import equal_matrices, matrix
 
 class TestSReLULayers(TestCase):
 
-    def test_srelu_layer(self):
-        D = 2
-        K = 2
-        N = 2
-        loss = elements_sum
-
+    def _test_srelu_layer(self, D, K, N, loss):
         # variables
         x = matrix('x', N, D)
         y = matrix('y', N, K)
@@ -82,6 +77,11 @@ class TestSReLULayers(TestCase):
         self.assertTrue(equal_matrices(Dtl, Dtl1, simplify_arguments=True))
         self.assertTrue(equal_matrices(Dar, Dar1, simplify_arguments=False))
         self.assertTrue(equal_matrices(Dtr, Dtr1, simplify_arguments=True))
+
+    def test_srelu_layer(self):
+        self._test_srelu_layer(D=3, K=2, N=2, loss = elements_sum)
+        self._test_srelu_layer(D=2, K=3, N=2, loss = elements_sum)
+        self._test_srelu_layer(D=2, K=2, N=3, loss = elements_sum)
 
 
 if __name__ == '__main__':

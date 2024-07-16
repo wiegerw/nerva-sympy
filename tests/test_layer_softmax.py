@@ -14,12 +14,7 @@ from utilities import equal_matrices, matrix, squared_error
 
 class TestSoftmaxLayers(TestCase):
 
-    def test_softmax_layer(self):
-        D = 3
-        K = 2
-        N = 2
-        loss = squared_error
-
+    def _test_softmax_layer(self, D, K, N, loss):
         # variables
         x = matrix('x', N, D)
         y = matrix('y', N, K)
@@ -37,7 +32,7 @@ class TestSoftmaxLayers(TestCase):
         DY = substitute(gradient(loss(y), y), (y, Y))
 
         # backpropagation
-        DZ = hadamard(Y, DY - column_repeat(diag(DY * Y.T), N))
+        DZ = hadamard(Y, DY - column_repeat(diag(DY * Y.T), K))
         DW = DZ.T * X
         Db = columns_sum(DZ)
         DX = DZ * W
@@ -54,15 +49,17 @@ class TestSoftmaxLayers(TestCase):
         Z = z
         Y = softmax(Z)
         DY = substitute(gradient(loss(y), y), (y, Y))
-        DZ = hadamard(Y, DY - column_repeat(diag(DY * Y.T), N))
+        DZ = hadamard(Y, DY - column_repeat(diag(DY * Y.T), K))
         DZ1 = gradient(loss(Y), z)
         self.assertTrue(equal_matrices(DZ, DZ1))
 
-    def test_log_softmax_layer(self):
-        D = 3
-        K = 2
-        N = 2
-        loss = elements_sum  # N.B. In this case squared_error seems too complicated
+    def test_softmax_layer(self):
+        self._test_softmax_layer(D=3, K=2, N=2, loss = elements_sum)
+        self._test_softmax_layer(D=2, K=3, N=2, loss = elements_sum)
+        self._test_softmax_layer(D=2, K=2, N=3, loss = elements_sum)
+        self._test_softmax_layer(D=3, K=2, N=2, loss = squared_error)
+
+    def _test_log_softmax_layer(self, D, K, N, loss):
 
         # variables
         x = matrix('x', N, D)
@@ -81,7 +78,7 @@ class TestSoftmaxLayers(TestCase):
         DY = substitute(gradient(loss(y), y), (y, Y))
 
         # backpropagation
-        DZ = DY - hadamard(softmax(Z), column_repeat(rows_sum(DY), N))
+        DZ = DY - hadamard(softmax(Z), column_repeat(rows_sum(DY), K))
         DW = DZ.T * X
         Db = columns_sum(DZ)
         DX = DZ * W
@@ -98,9 +95,14 @@ class TestSoftmaxLayers(TestCase):
         Z = z
         Y = log_softmax(Z)
         DY = substitute(gradient(loss(y), y), (y, Y))
-        DZ = DY - hadamard(softmax(Z), column_repeat(rows_sum(DY), N))
+        DZ = DY - hadamard(softmax(Z), column_repeat(rows_sum(DY), K))
         DZ1 = gradient(loss(Y), z)
         self.assertTrue(equal_matrices(DZ, DZ1))
+
+    def test_log_softmax_layer(self):
+        self._test_log_softmax_layer(D=3, K=2, N=2, loss = elements_sum)
+        self._test_log_softmax_layer(D=2, K=3, N=2, loss = elements_sum)
+        self._test_log_softmax_layer(D=2, K=2, N=3, loss = elements_sum)
 
 
 if __name__ == '__main__':

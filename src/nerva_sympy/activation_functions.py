@@ -3,8 +3,6 @@
 # (See accompanying file LICENSE or http://www.boost.org/LICENSE_1_0.txt)
 
 import sympy as sp
-from nerva_numpy.activation_functions import AllReLUActivation, HyperbolicTangentActivation, \
-    LeakyReLUActivation, ReLUActivation, SReLUActivation, SigmoidActivation
 from nerva_sympy.utilities import parse_function_call
 from sympy import Lambda, Piecewise
 
@@ -13,6 +11,7 @@ Matrix = sp.Matrix
 # Naming conventions:
 # - lowercase functions operate on real numbers
 # - uppercase functions operate on matrices
+
 
 def relu(x):
     # return max(0, x)
