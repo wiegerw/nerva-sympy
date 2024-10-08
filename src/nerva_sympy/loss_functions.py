@@ -4,8 +4,7 @@
 
 import sympy as sp
 from nerva_sympy.activation_functions import Sigmoid
-from nerva_sympy.matrix_operations import column_repeat, dot, elements_sum, hadamard, log, log_sigmoid, reciprocal, \
-    rows_sum
+from nerva_sympy.matrix_operations import column_repeat, dot, elements_sum, hadamard, log, log_sigmoid, reciprocal, rows_sum
 from nerva_sympy.softmax_functions import log_softmax, softmax, stable_log_softmax, stable_softmax
 
 

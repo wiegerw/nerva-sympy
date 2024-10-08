@@ -143,13 +143,13 @@ class SReLULayer(ActivationLayer):
         tr = self.act.tr
 
         Al = lambda Z: Z.applyfunc(lambda Zij: Piecewise((Zij - tl, Zij <= tl), (0, True)))
-        Ar = lambda Z: Z.applyfunc(lambda Zij: Piecewise((0, Zij <= tl), (0, Zij < tr), (Zij - tr, True)))
         Tl = lambda Z: Z.applyfunc(lambda Zij: Piecewise((1 - al, Zij <= tl), (0, True)))
+        Ar = lambda Z: Z.applyfunc(lambda Zij: Piecewise((0, Zij <= tl), (0, Zij < tr), (Zij - tr, True)))
         Tr = lambda Z: Z.applyfunc(lambda Zij: Piecewise((0, Zij <= tl), (0, Zij < tr), (1 - ar, True)))
 
         self.Dal = elements_sum(hadamard(DY, Al(Z)))
-        self.Dar = elements_sum(hadamard(DY, Ar(Z)))
         self.Dtl = elements_sum(hadamard(DY, Tl(Z)))
+        self.Dar = elements_sum(hadamard(DY, Ar(Z)))
         self.Dtr = elements_sum(hadamard(DY, Tr(Z)))
 
     def set_optimizer(self, optimizer: str):
