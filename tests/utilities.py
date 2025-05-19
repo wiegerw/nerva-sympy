@@ -16,6 +16,17 @@ import tensorflow as tf
 import torch
 
 
+def to_float(x):
+    if hasattr(x, 'item'):
+        # Handles numpy, torch, tensorflow tensors
+        return float(x.item())
+    elif hasattr(x, '__float__'):
+        # Handles sympy.Float and other float-like types
+        return float(x)
+    else:
+        raise TypeError(f"Unsupported type: {type(x)}")
+
+
 def check_arrays_equal(testcase: TestCase, operation, values):
     print(f'--- {operation} ---')
     values = [to_numpy(x) for x in values]
@@ -29,9 +40,11 @@ def check_arrays_equal(testcase: TestCase, operation, values):
 def check_numbers_equal(testcase: TestCase, operation, values):
     print(f'--- {operation} ---')
     for x in values:
-        print(x, x.__class__)
-    x0 = values[0]
-    for x in values[1:]:
+        print(x, type(x))
+
+    floats = [to_float(x) for x in values]
+    x0 = floats[0]
+    for x in floats[1:]:
         testcase.assertAlmostEqual(x0, x, delta=1e-5)
 
 

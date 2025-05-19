@@ -17,7 +17,7 @@ import sympy as sp
 from nerva_sympy.matrix_operations import gradient, substitute
 
 from utilities import check_arrays_equal, check_numbers_equal, equal_matrices, matrix, to_jax, to_numpy, to_sympy, \
-    to_tensorflow, to_torch
+    to_tensorflow, to_torch, to_matrix
 
 
 def instantiate_one_hot(X: sp.Matrix) -> sp.Matrix:
@@ -208,6 +208,40 @@ class TestLossFunctionValues(TestCase):
 
     def test_negative_log_likelihood_loss(self):
         self._test_loss_function('negative_log_likelihood_loss')
+
+    def test_focal_loss(self):
+        self._test_loss_function('focal_loss')
+
+
+class TestLossFunctionGradient(TestCase):
+    def _test_loss_function_gradient(self, loss: sympy_.LossFunction):
+        K = 3
+        N = 2
+
+        # vector
+        y = matrix('y', 1, K)
+        t = matrix('t', 1, K)
+        y_value = to_matrix(loss(y, t))
+        Dy = to_matrix(loss.gradient(y, t))
+        y_jacobian = y_value.jacobian(y)
+        self.assertTrue(equal_matrices(Dy, y_jacobian))
+
+        # matrix
+        Y = matrix('Y', N, K)
+        T = matrix('T', N, K)
+        DY = to_matrix(loss.gradient(Y, T))
+        for i in range(N):
+            Dy_i = to_matrix(loss.gradient(Y.row(i), T.row(i)))
+            self.assertTrue(equal_matrices(Dy_i, DY.row(i)))
+
+    def test_loss_function_gradient(self):
+        self._test_loss_function_gradient(sympy_.SquaredErrorLossFunction())
+        # self._test_loss_function_gradient(sympy_.MeanSquaredErrorLossFunction())  TODO: change the definition of MSE loss?
+        self._test_loss_function_gradient(sympy_.CrossEntropyLossFunction())
+        self._test_loss_function_gradient(sympy_.SoftmaxCrossEntropyLossFunction())
+        self._test_loss_function_gradient(sympy_.StableSoftmaxCrossEntropyLossFunction())
+        self._test_loss_function_gradient(sympy_.LogisticCrossEntropyLossFunction())
+        self._test_loss_function_gradient(sympy_.NegativeLogLikelihoodLossFunction())
 
 
 if __name__ == '__main__':
