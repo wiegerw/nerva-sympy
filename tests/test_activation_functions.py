@@ -72,11 +72,6 @@ class TestLogSigmoid(TestCase):
         self.assertEqual(sp.simplify(f1(x)), sp.simplify(f(x).diff(x)))
 
 
-if __name__ == '__main__':
-    import unittest
-    unittest.main()
-
-
 class TestActivationFunctions(TestCase):
     def make_variables(self):
         X = np.array([
@@ -199,3 +194,8 @@ class TestActivationFunctions(TestCase):
         x4 = torch_.Srelu_gradient(al, tl, ar, tr)(to_torch(x))
         x5 = jnp_.Srelu_gradient(al, tl, ar, tr)(to_jax(x))
         check_arrays_equal(self, 'Srelu_gradient', [x1, x2, x3, x4, x5])
+
+
+if __name__ == '__main__':
+    import unittest
+    unittest.main()
