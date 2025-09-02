@@ -10,8 +10,6 @@ import jax.numpy as jnp
 import numpy as np
 import sympy as sp
 from sympy import Matrix
-
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 import torch
 
@@ -27,20 +25,26 @@ def to_float(x):
         raise TypeError(f"Unsupported type: {type(x)}")
 
 
+VERBOSE = os.environ.get('NERVA_TEST_VERBOSE', '0') in ('1', 'true', 'True')
+
+
 def check_arrays_equal(testcase: TestCase, operation, values):
-    print(f'--- {operation} ---')
+    if VERBOSE:
+        print(f'--- {operation} ---')
     values = [to_numpy(x) for x in values]
-    for x in values:
-        print(x)
+    if VERBOSE:
+        for x in values:
+            print(x)
     x0 = values[0]
     for x in values[1:]:
         testcase.assertTrue(np.allclose(x0, x, atol=1e-5))
 
 
 def check_numbers_equal(testcase: TestCase, operation, values):
-    print(f'--- {operation} ---')
-    for x in values:
-        print(x, type(x))
+    if VERBOSE:
+        print(f'--- {operation} ---')
+        for x in values:
+            print(x, type(x))
 
     floats = [to_float(x) for x in values]
     x0 = floats[0]
@@ -151,12 +155,13 @@ def squared_error(X: Matrix):
 
 
 def pp(name: str, x: sp.Matrix):
-    print(f'{name} ({x.shape[0]}x{x.shape[1]})')
-    for row in x.tolist():
-        print('[', end='')
-        for i, elem in enumerate(row):
-            print(f'{elem}', end='')
-            if i < len(row) - 1:
-                print(', ', end='')
-        print(']')
-    print()
+    if VERBOSE:
+        print(f'{name} ({x.shape[0]}x{x.shape[1]})')
+        for row in x.tolist():
+            print('[', end='')
+            for i, elem in enumerate(row):
+                print(f'{elem}', end='')
+                if i < len(row) - 1:
+                    print(', ', end='')
+            print(']')
+        print()

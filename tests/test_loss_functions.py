@@ -86,9 +86,6 @@ class TestLossFunctionGradients(TestCase):
     def test_squared_error_loss(self):
         self._test_loss_function('squared_error_loss')
 
-    def test_mean_squared_error_loss(self):
-        self._test_loss_function('mean_squared_error_loss')
-
     def test_cross_entropy_loss(self):
         self._test_loss_function('cross_entropy_loss')
 
@@ -191,9 +188,6 @@ class TestLossFunctionValues(TestCase):
     def test_squared_error_loss(self):
         self._test_loss_function('squared_error_loss')
 
-    def test_mean_squared_error_loss(self):
-        self._test_loss_function('mean_squared_error_loss')
-
     def test_cross_entropy_loss(self):
         self._test_loss_function('cross_entropy_loss')
 
@@ -236,7 +230,6 @@ class TestLossFunctionGradient(TestCase):
 
     def test_loss_function_gradient(self):
         self._test_loss_function_gradient(sympy_.SquaredErrorLossFunction())
-        # self._test_loss_function_gradient(sympy_.MeanSquaredErrorLossFunction())  TODO: change the definition of MSE loss?
         self._test_loss_function_gradient(sympy_.CrossEntropyLossFunction())
         self._test_loss_function_gradient(sympy_.SoftmaxCrossEntropyLossFunction())
         self._test_loss_function_gradient(sympy_.StableSoftmaxCrossEntropyLossFunction())
