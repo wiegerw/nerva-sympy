@@ -82,6 +82,51 @@ assert equal_matrices(DZ, DZ1)
 
 ---
 
+## 🧪 Running Tests
+
+Controls for output and verbosity
+- Individual test names (default): The helper script runs pytest with -v, so you see each test as it runs.
+- Suppress internal prints from tests: By default the test utilities do not print intermediate matrices/numbers. Set NERVA_TEST_VERBOSE=1 to enable those prints when needed.
+- Override pytest flags: Set NERVA_PYTEST_FLAGS to customize, e.g., NERVA_PYTEST_FLAGS="-ra -s" ./tests/run_all_tests.sh to also show print output from successful tests.
+- Unittest fallback: Uses -b (buffered) and -v by default.
+
+
+
+To run the test suite locally:
+
+1) Install dependencies (pytest is optional but recommended for nicer output):
+
+```bash
+pip install -r requirements.txt
+pip install pytest  # optional
+```
+
+2) Run all tests via the helper script (it adds src to PYTHONPATH automatically):
+
+```bash
+./tests/run_all_tests.sh
+```
+
+You can pass additional arguments to the underlying test runner, for example:
+
+```bash
+# Run only tests whose names match "jacobian"
+./tests/run_all_tests.sh -k "jacobian"
+
+# Run a specific test file, class, or test case (pytest syntax)
+./tests/run_all_tests.sh tests/test_softmax_functions.py::TestSoftmax::test_softmax
+```
+
+If you prefer to run without the script or are on a platform without bash:
+
+```bash
+# Using pytest
+python3 -m pytest -s tests
+
+# Or using unittest discovery
+python3 -m unittest discover -s tests -p "test_*.py" -v
+```
+
 ## 🧪 Validation Suite
 
 The test suite covers **activation functions, layers, loss functions, and matrix operations**.  

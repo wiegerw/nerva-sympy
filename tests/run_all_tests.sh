@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# Copyright 2025 Wieger Wesselink.
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE or http://www.boost.org/LICENSE_1_0.txt)
+
 # Run all tests in the tests folder.
 # - Uses pytest if available (preferred for nicer output)
 # - Falls back to Python's unittest discovery otherwise
