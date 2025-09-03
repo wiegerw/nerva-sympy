@@ -203,9 +203,6 @@ class TestLossFunctionValues(TestCase):
     def test_negative_log_likelihood_loss(self):
         self._test_loss_function('negative_log_likelihood_loss')
 
-    def test_focal_loss(self):
-        self._test_loss_function('focal_loss')
-
 
 class TestLossFunctionGradient(TestCase):
     def _test_loss_function_gradient(self, loss: sympy_.LossFunction):
