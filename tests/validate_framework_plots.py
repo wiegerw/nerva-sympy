@@ -43,6 +43,7 @@ def validate_frameworks_plot(models: dict, n_steps: int = 20):
     history = {name: {"X": [], "Y": [], "DY": []} for name in names}
 
     for step, batches in enumerate(zip(*[ml[2] for ml in models_losses_loaders])):
+        print(f'step {step + 1}/{n_steps}')
         if step >= n_steps:
             break
 

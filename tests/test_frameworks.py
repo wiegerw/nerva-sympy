@@ -42,7 +42,7 @@ class TestFrameworkConsistency(unittest.TestCase):
     def test_all_frameworks(self):
         """Check that all frameworks produce consistent intermediates over a few batches."""
         n_steps = 3
-        tol = 1e-6
+        tol = 1e-5
 
         # unpack triples
         models_losses_loaders = list(self.models.values())

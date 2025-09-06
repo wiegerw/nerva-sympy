@@ -1,5 +1,10 @@
-import tempfile
+# Copyright 2025 Wieger Wesselink.
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE or http://www.boost.org/LICENSE_1_0.txt)
+
 import os
+import random
+import tempfile
 
 def construct_mlp_jax(datapath: str):
     import jax.numpy as jnp
@@ -352,18 +357,22 @@ def construct_models(data_path: str, synchronize_weights: bool = False):
     models = {name: ctor(data_path) for name, ctor in constructors.items()}
 
     if synchronize_weights:
+        # Pick a random framework to be the source
+        source_name = random.choice(list(models.keys()))
+        print(f'Copying weights from nerva_{source_name}')
+        M_source, _, _ = models[source_name]
+
         # Create a temporary file path for weights
         fd, weights_file = tempfile.mkstemp(suffix=".npz")
         os.close(fd)  # Close the low-level file descriptor immediately
 
         try:
-            # Save weights from torch
-            M_torch, _, _ = models["torch"]
-            M_torch.save_weights_and_bias(weights_file)
+            # Save weights from the selected source framework
+            M_source.save_weights_and_bias(weights_file)
 
-            # Load into others
+            # Load into all other frameworks
             for name, (M, _, _) in models.items():
-                if name != "torch":
+                if name != source_name:
                     M.load_weights_and_bias(weights_file)
 
         finally:
