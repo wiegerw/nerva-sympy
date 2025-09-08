@@ -17,7 +17,7 @@ def construct_mlp_jax(datapath: str):
     from nerva_jax.matrix_operations import elements_sum, Matrix
     from nerva_jax.multilayer_perceptron import MultilayerPerceptron
     from nerva_jax.optimizers import MomentumOptimizer, NesterovOptimizer, CompositeOptimizer
-    from nerva_jax.weight_initializers import zero_bias, xavier_normalized_weights
+    from nerva_jax.weight_initializers import bias_zero, weights_xavier_normal
 
     # ------------------------
     # Custom activation function
@@ -43,7 +43,7 @@ def construct_mlp_jax(datapath: str):
     # Custom weight initializer
     # ------------------------
 
-    def lecun_weights(W: Matrix) -> Matrix:
+    def weights_lecun(W: Matrix) -> Matrix:
         K, D = W.shape
         stddev = jnp.sqrt(1.0 / D)
         return np.random.randn(K, D) * stddev
@@ -64,21 +64,21 @@ def construct_mlp_jax(datapath: str):
 
         # configure layer 1
         layer1 = ActivationLayer(784, 1024, ELUActivation(0.1))
-        xavier_normalized_weights(layer1.W)
-        zero_bias(layer1.b)
+        layer1.W = weights_xavier_normal(layer1.W)
+        layer1.b = bias_zero(layer1.b)
         optimizer_W = MomentumOptimizer(layer1, "W", "DW", 0.9)
         optimizer_b = NesterovOptimizer(layer1, "b", "Db", 0.75)
         layer1.optimizer = CompositeOptimizer([optimizer_W, optimizer_b])
 
         # configure layer 2
         layer2 = ActivationLayer(1024, 512, HyperbolicTangentActivation())
-        layer2.W = lecun_weights(layer2.W)
-        layer2.b = zero_bias(layer2.b)
+        layer2.W = weights_lecun(layer2.W)
+        layer2.b = bias_zero(layer2.b)
         layer2.set_optimizer("Momentum(0.8)")
 
         # configure layer 3
         layer3 = LinearLayer(512, 10)
-        layer3.set_weights("He")
+        layer3.set_weights("HeNormal")
         layer3.set_optimizer("GradientDescent")
 
         M.layers = [layer1, layer2, layer3]
@@ -99,7 +99,7 @@ def construct_mlp_numpy(datapath: str):
     from nerva_numpy.matrix_operations import elements_sum, Matrix
     from nerva_numpy.multilayer_perceptron import MultilayerPerceptron
     from nerva_numpy.optimizers import MomentumOptimizer, NesterovOptimizer, CompositeOptimizer
-    from nerva_numpy.weight_initializers import set_bias_to_zero, set_weights_xavier_normalized
+    from nerva_numpy.weight_initializers import set_bias_zero, set_weights_xavier_normal
 
     # ------------------------
     # Custom activation function
@@ -146,8 +146,8 @@ def construct_mlp_numpy(datapath: str):
 
         # configure layer 1
         layer1 = ActivationLayer(784, 1024, ELUActivation(0.1))
-        set_weights_xavier_normalized(layer1.W)
-        set_bias_to_zero(layer1.b)
+        set_weights_xavier_normal(layer1.W)
+        set_bias_zero(layer1.b)
         optimizer_W = MomentumOptimizer(layer1.W, layer1.DW, 0.9)
         optimizer_b = NesterovOptimizer(layer1.b, layer1.Db, 0.75)
         layer1.optimizer = CompositeOptimizer([optimizer_W, optimizer_b])
@@ -155,12 +155,12 @@ def construct_mlp_numpy(datapath: str):
         # configure layer 2
         layer2 = ActivationLayer(1024, 512, HyperbolicTangentActivation())
         set_weights_lecun(layer2.W)
-        set_bias_to_zero(layer2.b)
+        set_bias_zero(layer2.b)
         layer2.set_optimizer("Momentum(0.8)")
 
         # configure layer 3
         layer3 = LinearLayer(512, 10)
-        layer3.set_weights("He")
+        layer3.set_weights("HeNormal")
         layer3.set_optimizer("GradientDescent")
 
         M.layers = [layer1, layer2, layer3]
@@ -181,7 +181,7 @@ def construct_mlp_tensorflow(datapath: str):
     from nerva_tensorflow.matrix_operations import Matrix
     from nerva_tensorflow.multilayer_perceptron import MultilayerPerceptron
     from nerva_tensorflow.optimizers import MomentumOptimizer, NesterovOptimizer, CompositeOptimizer
-    from nerva_tensorflow.weight_initializers import set_bias_to_zero, set_weights_xavier_normalized
+    from nerva_tensorflow.weight_initializers import set_bias_zero, set_weights_xavier_normal
 
     # ------------------------
     # Custom activation function
@@ -228,8 +228,8 @@ def construct_mlp_tensorflow(datapath: str):
 
         # configure layer 1
         layer1 = ActivationLayer(784, 1024, ELUActivation(0.1))
-        set_weights_xavier_normalized(layer1.W)
-        set_bias_to_zero(layer1.b)
+        set_weights_xavier_normal(layer1.W)
+        set_bias_zero(layer1.b)
         optimizer_W = MomentumOptimizer(layer1.W, layer1.DW, 0.9)
         optimizer_b = NesterovOptimizer(layer1.b, layer1.Db, 0.75)
         layer1.optimizer = CompositeOptimizer([optimizer_W, optimizer_b])
@@ -237,12 +237,12 @@ def construct_mlp_tensorflow(datapath: str):
         # configure layer 2
         layer2 = ActivationLayer(1024, 512, HyperbolicTangentActivation())
         set_weights_lecun(layer2.W)
-        set_bias_to_zero(layer2.b)
+        set_bias_zero(layer2.b)
         layer2.set_optimizer("Momentum(0.8)")
 
         # configure layer 3
         layer3 = LinearLayer(512, 10)
-        layer3.set_weights("He")
+        layer3.set_weights("HeNormal")
         layer3.set_optimizer("GradientDescent")
 
         M.layers = [layer1, layer2, layer3]
@@ -263,7 +263,7 @@ def construct_mlp_torch(datapath: str):
     from nerva_torch.matrix_operations import elements_sum, Matrix
     from nerva_torch.multilayer_perceptron import MultilayerPerceptron
     from nerva_torch.optimizers import MomentumOptimizer, NesterovOptimizer, CompositeOptimizer
-    from nerva_torch.weight_initializers import set_bias_to_zero, set_weights_xavier_normalized
+    from nerva_torch.weight_initializers import set_bias_zero, set_weights_xavier_normal
 
     # ------------------------
     # Custom activation function
@@ -310,8 +310,8 @@ def construct_mlp_torch(datapath: str):
 
         # configure layer 1
         layer1 = ActivationLayer(784, 1024, ELUActivation(0.1))
-        set_weights_xavier_normalized(layer1.W)
-        set_bias_to_zero(layer1.b)
+        set_weights_xavier_normal(layer1.W)
+        set_bias_zero(layer1.b)
         optimizer_W = MomentumOptimizer(layer1.W, layer1.DW, 0.9)
         optimizer_b = NesterovOptimizer(layer1.b, layer1.Db, 0.75)
         layer1.optimizer = CompositeOptimizer([optimizer_W, optimizer_b])
@@ -319,12 +319,12 @@ def construct_mlp_torch(datapath: str):
         # configure layer 2
         layer2 = ActivationLayer(1024, 512, HyperbolicTangentActivation())
         set_weights_lecun(layer2.W)
-        set_bias_to_zero(layer2.b)
+        set_bias_zero(layer2.b)
         layer2.set_optimizer("Momentum(0.8)")
 
         # configure layer 3
         layer3 = LinearLayer(512, 10)
-        layer3.set_weights("He")
+        layer3.set_weights("HeNormal")
         layer3.set_optimizer("GradientDescent")
 
         M.layers = [layer1, layer2, layer3]
