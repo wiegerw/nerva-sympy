@@ -7,14 +7,38 @@
 import os
 import unittest
 import numpy as np
-from mlp_constructors import construct_models
+from mlp_constructors import construct_models, construct_mlp_tensorflow
 
 
-def run_sgd_step(M, loss, X, T):
+def run_sgd_step(M, loss, X, T, lr):
     Y = M.feedforward(X)
     DY = loss.gradient(Y, T) / X.shape[0]
     M.backpropagate(Y, DY)
+    M.optimize(lr)
     return Y, DY
+
+
+def compute_loss(M, data_loader, loss):
+    """Compute mean loss for a model over a data loader using the given loss."""
+    N = len(data_loader.dataset)  # N is the number of examples
+    total_loss = 0.0
+    for X, T in data_loader:
+        Y = M.feedforward(X)
+        total_loss += loss(Y, T)
+    return total_loss / N
+
+
+def compute_accuracy(M, data_loader):
+    import tensorflow as tf
+    """Compute mean classification accuracy for a model over a data loader."""
+    N = len(data_loader.dataset)  # N is the number of examples
+    total_correct = 0
+    for X, T in data_loader:
+        Y = M.feedforward(X)
+        predicted = tf.argmax(Y, axis=1)  # the predicted classes for the batch
+        targets = tf.argmax(T, axis=1)    # the expected classes
+        total_correct += tf.reduce_sum(tf.cast(tf.equal(predicted, targets), dtype=tf.int32))
+    return total_correct / N
 
 
 def tensors_to_numpy(t):
@@ -32,20 +56,18 @@ def max_deviation(arrays):
 class TestFrameworkConsistency(unittest.TestCase):
     """Unit test to check that all frameworks produce consistent intermediate results."""
 
-    @classmethod
-    def setUpClass(cls):
-        """Set up the models once for all tests."""
-        here = os.path.dirname(__file__)
-        data_path = os.path.join(here, "..", "data", "mnist-flattened.npz")
-        cls.models = construct_models(synchronize_weights=True, data_path=data_path)
-
     def test_all_frameworks(self):
         """Check that all frameworks produce consistent intermediates over a few batches."""
-        n_steps = 3
+        n_steps = 50
         tol = 1e-5
+        lr = 0.001
+
+        here = os.path.dirname(__file__)
+        data_path = os.path.join(here, "..", "data", "mnist-flattened.npz")
+        models = construct_models(synchronize_weights=True, data_path=data_path)
 
         # unpack triples
-        models_losses_loaders = list(self.models.values())
+        models_losses_loaders = list(models.values())
 
         for step, batches in enumerate(zip(*[ml[2] for ml in models_losses_loaders])):
             if step >= n_steps:
@@ -53,7 +75,7 @@ class TestFrameworkConsistency(unittest.TestCase):
 
             Xs, Ys, DYs, Ts = [], [], [], []
             for (M, loss, _), (X, T) in zip(models_losses_loaders, batches):
-                Y, DY = run_sgd_step(M, loss, X, T)
+                Y, DY = run_sgd_step(M, loss, X, T, lr)
                 Xs.append(tensors_to_numpy(X))
                 Ys.append(tensors_to_numpy(Y))
                 DYs.append(tensors_to_numpy(DY))
@@ -63,10 +85,6 @@ class TestFrameworkConsistency(unittest.TestCase):
             self.assertLessEqual(max_deviation(Ys), tol, f"Y mismatch at step {step}")
             self.assertLessEqual(max_deviation(DYs), tol, f"DY mismatch at step {step}")
             self.assertLessEqual(max_deviation(Ts), tol, f"T mismatch at step {step}")
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 if __name__ == "__main__":

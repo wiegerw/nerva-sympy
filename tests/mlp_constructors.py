@@ -6,6 +6,7 @@ import os
 import random
 import tempfile
 
+
 def construct_mlp_jax(datapath: str):
     import jax.numpy as jnp
     import numpy as np
@@ -335,7 +336,22 @@ def construct_mlp_torch(datapath: str):
     return M, loss, train_loader
 
 
-def construct_models(data_path: str, synchronize_weights: bool = False):
+def copy_weights(M_source, M_target):
+    """
+    Copy weights from one model to another using a temporary file.
+    """
+    fd, weights_file = tempfile.mkstemp(suffix=".npz")
+    os.close(fd)  # Close immediately, only want the path
+
+    try:
+        M_source.save_weights_and_bias(weights_file)
+        M_target.load_weights_and_bias(weights_file)
+    finally:
+        if os.path.exists(weights_file):
+            os.remove(weights_file)
+
+
+def construct_models(data_path: str, frameworks=("jax", "numpy", "tensorflow", "torch"), synchronize_weights: bool = False):
     """
     Construct models for all four frameworks: jax, numpy, tensorflow, torch.
 
@@ -353,7 +369,7 @@ def construct_models(data_path: str, synchronize_weights: bool = False):
         "tensorflow": construct_mlp_tensorflow,
         "torch": construct_mlp_torch,
     }
-
+    constructors = {name: constructors[name] for name in frameworks if name in constructors}
     models = {name: ctor(data_path) for name, ctor in constructors.items()}
 
     if synchronize_weights:
@@ -362,21 +378,8 @@ def construct_models(data_path: str, synchronize_weights: bool = False):
         print(f'Copying weights from nerva_{source_name}')
         M_source, _, _ = models[source_name]
 
-        # Create a temporary file path for weights
-        fd, weights_file = tempfile.mkstemp(suffix=".npz")
-        os.close(fd)  # Close the low-level file descriptor immediately
-
-        try:
-            # Save weights from the selected source framework
-            M_source.save_weights_and_bias(weights_file)
-
-            # Load into all other frameworks
-            for name, (M, _, _) in models.items():
-                if name != source_name:
-                    M.load_weights_and_bias(weights_file)
-
-        finally:
-            if os.path.exists(weights_file):
-                os.remove(weights_file)
+        for name, (M, _, _) in models.items():
+            if name != source_name:
+                copy_weights(M_source, M)
 
     return models
