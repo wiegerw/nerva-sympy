@@ -20,21 +20,21 @@ class TestDropoutLayers(TestCase):
         y = matrix('y', N, K)
         w = matrix('w', K, D)
         b = matrix('b', 1, K)
-        r = matrix('r', D, K)
+        r = matrix('r', K, D)
         X = x
         W = w
         R = r
 
         # feedforward
-        Y = X * hadamard(W.T, R) + row_repeat(b, N)
+        Y = X * hadamard(W, R).T + row_repeat(b, N)
 
         # symbolic differentiation
         DY = substitute(gradient(loss(y), y), (y, Y))
 
         # backpropagation
-        DW = hadamard(DY.T * X, R.T)
+        DW = hadamard(DY.T * X, R)
         Db = columns_sum(DY)
-        DX = DY * hadamard(W, R.T)
+        DX = DY * hadamard(W, R)
 
         # test gradients
         DW1 = gradient(loss(Y), w)
@@ -58,13 +58,13 @@ class TestDropoutLayers(TestCase):
         z = matrix('z', N, K)
         w = matrix('w', K, D)
         b = matrix('b', 1, K)
-        r = matrix('r', D, K)
+        r = matrix('r', K, D)
         X = x
         W = w
         R = r
 
         # feedforward
-        Z = X * hadamard(W.T, R) + row_repeat(b, N)
+        Z = X * hadamard(W, R).T + row_repeat(b, N)
         Y = act(Z)
 
         # symbolic differentiation
@@ -72,9 +72,9 @@ class TestDropoutLayers(TestCase):
 
         # backpropagation
         DZ = hadamard(DY, act.gradient(Z))
-        DW = hadamard(DZ.T * X, R.T)
+        DW = hadamard(DZ.T * X, R)
         Db = columns_sum(DZ)
-        DX = DZ * hadamard(W, R.T)
+        DX = DZ * hadamard(W, R)
 
         # test gradients
         DZ1 = substitute(gradient(loss(act(z)), z), (z, Z))
@@ -107,13 +107,13 @@ class TestDropoutLayers(TestCase):
         z = matrix('z', N, K)
         w = matrix('w', K, D)
         b = matrix('b', 1, K)
-        r = matrix('r', D, K)
+        r = matrix('r', K, D)
         X = x
         W = w
         R = r
 
         # feedforward
-        Z = X * hadamard(W.T, R) + row_repeat(b, N)
+        Z = X * hadamard(W, R).T + row_repeat(b, N)
         Y = Sigmoid(Z)
 
         # symbolic differentiation
@@ -121,9 +121,9 @@ class TestDropoutLayers(TestCase):
 
         # backpropagation
         DZ = hadamard(DY, hadamard(Y, ones(N, K) - Y))
-        DW = hadamard(DZ.T * X, R.T)
+        DW = hadamard(DZ.T * X, R)
         Db = columns_sum(DZ)
-        DX = DZ * hadamard(W, R.T)
+        DX = DZ * hadamard(W, R)
 
         # test gradients
         Y_z = Sigmoid(z)
