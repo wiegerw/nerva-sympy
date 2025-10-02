@@ -177,6 +177,27 @@ class TestLogSoftmaxLayerDerivation(TestCase):
 
 
 class TestBatchNormDerivation(TestCase):
+    def test_batch_norm_definition(self):
+        N = 4
+        D = 3
+        X = matrix('x', N, D)
+        R = X - (ones(N, N) / N) * X
+        Sigma = diag(R.T * R).T / N
+        mu = (ones(N).T * X) / N
+
+        self.assertTrue(R.shape == (N, D))
+        self.assertTrue(Sigma.shape == (1, D))
+        self.assertTrue(mu.shape == (1, D))
+
+        r = lambda i: X.row(i) - mu                        # r(i) is the i-th row of R
+        for i in range(N):
+            self.assertEqual(r(i), R.row(i))
+
+        sigma2 = lambda j: (R.col(j).T * R.col(j) / N)[0]  # sigma2(j) is the j-th element of Sigma
+        for j in range(D):
+            self.assertEqual(sigma2(j), Sigma[0, j])
+
+
     def test_derivation_Dx(self):
         N = 2
         x = matrix('x', N, 1)
