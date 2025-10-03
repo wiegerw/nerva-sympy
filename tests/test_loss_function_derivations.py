@@ -18,8 +18,8 @@ from utilities import equal_matrices, matrix, to_matrix, to_number
 Matrix = sp.Matrix
 
 
-# appendix D
 class TestLossFunctionDerivation(TestCase):
+    # appendix D
     def test_squared_error_loss(self):
         K = 3
         N = 4
@@ -43,6 +43,7 @@ class TestLossFunctionDerivation(TestCase):
             e2 = DY.row(i)
             self.assertTrue(equal_matrices(e1, e2))
 
+    # appendix D
     def test_cross_entropy_loss(self):
         K = 3
         N = 4
@@ -66,6 +67,7 @@ class TestLossFunctionDerivation(TestCase):
             e2 = DY.row(i)
             self.assertTrue(equal_matrices(e1, e2))
 
+    # appendix D
     def test_softmax_cross_entropy_loss(self):
         K = 3
         N = 4
@@ -89,6 +91,7 @@ class TestLossFunctionDerivation(TestCase):
             e2 = DY.row(i)
             self.assertTrue(equal_matrices(e1, e2))
 
+    # appendix D
     def test_logistic_cross_entropy_loss(self):
         K = 3
         N = 4
@@ -112,6 +115,7 @@ class TestLossFunctionDerivation(TestCase):
             e2 = DY.row(i)
             self.assertTrue(equal_matrices(e1, e2))
 
+    # appendix D
     def test_negative_log_likelihood_loss(self):
         K = 3
         N = 4
@@ -134,6 +138,63 @@ class TestLossFunctionDerivation(TestCase):
             e1 = gradient(negative_log_likelihood_loss(y, t), y)
             e2 = DY.row(i)
             self.assertTrue(equal_matrices(e1, e2))
+
+    # appendix D.1
+    def test_cross_entropy_loss_derivation(self):
+        K = 3
+        y = matrix('y', 1, K)
+        t = matrix('t', 1, K)
+
+        e1 = gradient(cross_entropy_loss(y, t), y)
+        e2 = -(t * log(y).T).jacobian(y)
+        e3 = -t * Diag(reciprocal(y))
+        e4 = -hadamard(t, reciprocal(y))
+
+        self.assertTrue(equal_matrices(e1, e2))
+        self.assertTrue(equal_matrices(e2, e3))
+        self.assertTrue(equal_matrices(e3, e4))
+
+    def test_softmax_cross_entropy_loss_derivation(self):
+        K = 3
+        y = matrix('y', 1, K)
+        t = matrix('t', 1, K)
+
+        e1 = gradient(softmax_cross_entropy_loss(y, t), y)
+        e2 = -(t * log_softmax(y).T).jacobian(y)
+        e3 = -t * log_softmax(y).jacobian(y)
+        e4 = -t * (identity(K) - ones(K) * softmax(y))
+        e5 = t * ones(K) * softmax(y) - t
+
+        self.assertTrue(equal_matrices(e1, e2))
+        self.assertTrue(equal_matrices(e2, e3))
+        self.assertTrue(equal_matrices(e3, e4))
+        self.assertTrue(equal_matrices(e4, e5))
+
+    def test_logistic_cross_entropy_loss_derivation(self):
+        K = 3
+        y = matrix('y', 1, K)
+        t = matrix('t', 1, K)
+
+        e1 = gradient(logistic_cross_entropy_loss(y, t), y)
+        e2 = (-t * log(Sigmoid(y)).T).jacobian(y)
+        e3 = -t * log(Sigmoid(y)).jacobian(y)
+        e4 = -t * Diag(ones(K).T - Sigmoid(y))
+        e5 = hadamard(t, Sigmoid(y)) - t
+
+        self.assertTrue(equal_matrices(e1, e2))
+        self.assertTrue(equal_matrices(e2, e3))
+        self.assertTrue(equal_matrices(e3, e4))
+        self.assertTrue(equal_matrices(e4, e5))
+
+        t = sp.Symbol('t', real=True)
+        f1 = sp.diff(sp.log(sigmoid(t)), t)
+        f2 = sp.diff(sigmoid(t), t) / sigmoid(t)
+        f3 = (sigmoid(t) * (1 - sigmoid(t))) / sigmoid(t)
+        f4 = 1 - sigmoid(t)
+
+        self.assertTrue(f1.equals(f2))
+        self.assertTrue(f2.equals(f3))
+        self.assertTrue(f3.equals(f4))
 
 
 if __name__ == '__main__':
