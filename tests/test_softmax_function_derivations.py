@@ -58,6 +58,20 @@ class TestSoftmaxDerivation(TestCase):
         self.assertEqual(log_softmax(X), X - log((exp(X) * ones(D))) * ones(D).T)
         self.assertEqual(stable_log_softmax(X), Z - log((exp(Z)* ones(D))) * ones(D).T)
 
+        # derivative of softmax(x)
+        e1 = softmax(x).jacobian(x)
+        e2 = stable_softmax(x).jacobian(x)
+        e3 = Diag(softmax(x)) - softmax(x).T * softmax(x)
+        self.assertTrue(equal_matrices(e1, e2))
+        self.assertTrue(equal_matrices(e1, e3))
+
+        # derivative of log_softmax(x)
+        f1 = log_softmax(x).jacobian(x)
+        f2 = stable_log_softmax(x).jacobian(x)
+        f3 = identity(D) - ones(D) * softmax(x)
+        self.assertTrue(equal_matrices(f1, f2))
+        self.assertTrue(equal_matrices(f1, f3))
+
     # appendix C.2
     def test_softmax_derivation2(self):
         D = 3
