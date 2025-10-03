@@ -37,8 +37,7 @@ class TestSoftmaxDerivation(TestCase):
         self.assertTrue(equal_matrices(exp(z).T * (exp(z) / (R * R)), y.T * y))
         self.assertTrue(equal_matrices(dsoftmax_dz, Diag(y) - y.T * y))
 
-    # appendix C.1
-    def test_softmax_derivation1(self):
+    def test_softmax_derivation_appendix_C1(self):
         D = 3
         N = 4
 
@@ -63,67 +62,39 @@ class TestSoftmaxDerivation(TestCase):
         e2 = stable_softmax(x).jacobian(x)
         e3 = Diag(softmax(x)) - softmax(x).T * softmax(x)
         self.assertTrue(equal_matrices(e1, e2))
-        self.assertTrue(equal_matrices(e1, e3))
+        self.assertTrue(equal_matrices(e2, e3))
 
         # derivative of log_softmax(x)
         f1 = log_softmax(x).jacobian(x)
         f2 = stable_log_softmax(x).jacobian(x)
         f3 = identity(D) - ones(D) * softmax(x)
         self.assertTrue(equal_matrices(f1, f2))
-        self.assertTrue(equal_matrices(f1, f3))
+        self.assertTrue(equal_matrices(f2, f3))
 
-    # appendix C.2
-    def test_softmax_derivation2(self):
+    def test_softmax_derivation_appendix_C2(self):
         D = 3
 
         x = matrix('x', 1, D)
-        y = softmax(x)
+        y = matrix('y', 1, D)
 
-        E = exp(x)
-        Q = rows_sum(exp(x))
-        dE_dx = E.jacobian(x)
-        dQ_dx = Q.jacobian(x)
-        self.assertTrue(equal_matrices(dQ_dx, columns_sum(dE_dx)))
-        self.assertTrue(equal_matrices(columns_sum(dE_dx), columns_sum(Diag(exp(x)))))
-        self.assertTrue(equal_matrices(columns_sum(Diag(exp(x))), exp(x)))
+        e1 = log(softmax(x)).jacobian(x)
+        e2 = log(y).jacobian(y) * softmax(x).jacobian(x)
+        e3 = Diag(reciprocal(y)) * (Diag(y) - y.T * y)
+        e4 = identity(D) - Diag(reciprocal(y)) * y.T * y
+        e5 = identity(D) - ones(D) * y
+        e6 = identity(D) - ones(D) * softmax(x)
 
-        dsoftmax_dx = softmax(x).jacobian(x)
-        lhs = exp(x)
-        rhs = reciprocal(rows_sum(exp(x)))
-        dlhs_dx = lhs.jacobian(x)
-        drhs_dx = rhs.jacobian(x)
-        self.assertTrue(equal_matrices(dsoftmax_dx, dlhs_dx * to_number(rhs) + lhs.T * drhs_dx))
-        self.assertTrue(equal_matrices(dlhs_dx * to_number(rhs), Diag(exp(x)) * to_number(rhs)))
-        R = to_number(rows_sum(exp(x)))
-        self.assertTrue(equal_matrices(drhs_dx, - exp(x) / (R * R)))
-        self.assertTrue(equal_matrices(Diag(exp(x)) * to_number(rhs), Diag(y)))
-        self.assertTrue(equal_matrices(exp(x).T * (exp(x) / (R * R)), y.T * y))
-        self.assertTrue(equal_matrices(dsoftmax_dx, Diag(y) - y.T * y))
+        # replace occurrences of y by softmax(x)
+        e2 = substitute(e2, (y, softmax(x)))
+        e3 = substitute(e3, (y, softmax(x)))
+        e4 = substitute(e4, (y, softmax(x)))
+        e5 = substitute(e5, (y, softmax(x)))
 
-    # appendix C.2
-    def test_log_softmax_derivation(self):
-        D = 3
-
-        def softmax(x: Matrix) -> Matrix:
-            return reciprocal(rows_sum(exp(x))) * exp(x)
-
-        def log_softmax(x: Matrix) -> Matrix:
-            return log(softmax(x))
-
-        x = matrix('x', 1, D)
-        y = softmax(x)
-        z = matrix('z', 1, D)
-
-        dsoftmax_dx = softmax(x).jacobian(x)
-        dlog_softmax_dx = log_softmax(x).jacobian(x)
-        dlog_z_dz = substitute(log(z).jacobian(z), (z, y))
-
-        self.assertTrue(equal_matrices(dlog_softmax_dx, dlog_z_dz * dsoftmax_dx))
-        self.assertTrue(equal_matrices(dlog_z_dz, Diag(reciprocal(y))))
-        self.assertTrue(equal_matrices(dsoftmax_dx, Diag(y) - y.T * y))
-        self.assertTrue(equal_matrices(dlog_softmax_dx, Diag(reciprocal(y)) * (Diag(y) - y.T * y)))
-        self.assertTrue(equal_matrices(dlog_softmax_dx, identity(D) - Diag(reciprocal(y)) * y.T * y))
-        self.assertTrue(equal_matrices(dlog_softmax_dx, identity(D) - row_repeat(y, D)))
+        self.assertTrue(equal_matrices(e1, e2))
+        self.assertTrue(equal_matrices(e2, e3))
+        self.assertTrue(equal_matrices(e3, e4))
+        self.assertTrue(equal_matrices(e4, e5))
+        self.assertTrue(equal_matrices(e5, e6))
 
     def test1(self):
         K = 3
