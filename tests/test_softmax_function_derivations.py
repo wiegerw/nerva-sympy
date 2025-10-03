@@ -37,12 +37,30 @@ class TestSoftmaxDerivation(TestCase):
         self.assertTrue(equal_matrices(exp(z).T * (exp(z) / (R * R)), y.T * y))
         self.assertTrue(equal_matrices(dsoftmax_dz, Diag(y) - y.T * y))
 
-    # appendix C.2
-    def test_softmax_derivation(self):
+    # appendix C.1
+    def test_softmax_derivation1(self):
         D = 3
+        N = 4
 
-        def softmax(x: Matrix) -> Matrix:
-            return reciprocal(rows_sum(exp(x))) * exp(x)
+        self.assertEqual(ones(D).shape, (D, 1))
+
+        x = matrix('x', 1, D)
+        z = x - sp.Max(*x) * ones(D).T
+        self.assertEqual(softmax(x), exp(x) / to_number(exp(x) * ones(D)))
+        self.assertEqual(stable_softmax(x), exp(z) / to_number(exp(z) * ones(D)))
+        self.assertEqual(log_softmax(x), x - log((exp(x) * ones(D))) * ones(D).T)
+        self.assertEqual(stable_log_softmax(x), z - log((exp(z)* ones(D))) * ones(D).T)
+
+        X = matrix('x', N, D)
+        Z = X - rows_max(X) * ones(D).T
+        self.assertEqual(softmax(X), hadamard(exp(X), (reciprocal(exp(X) * ones(D)) * ones(D).T)))
+        self.assertEqual(stable_softmax(X), hadamard(exp(Z), reciprocal(exp(Z) * ones(D)) * ones(D).T))
+        self.assertEqual(log_softmax(X), X - log((exp(X) * ones(D))) * ones(D).T)
+        self.assertEqual(stable_log_softmax(X), Z - log((exp(Z)* ones(D))) * ones(D).T)
+
+    # appendix C.2
+    def test_softmax_derivation2(self):
+        D = 3
 
         x = matrix('x', 1, D)
         y = softmax(x)
