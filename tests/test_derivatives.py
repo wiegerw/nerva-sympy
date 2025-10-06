@@ -14,6 +14,71 @@ Matrix = sp.Matrix
 
 
 class TestLemmas(TestCase):
+    def test_lemma_fx_x(self):
+        x = matrix('x', 1, 3)
+        f = lambda x: 3 * x[0, 0] + 2 * x[0, 1] + 5 * x[0, 2]
+        g = lambda x: f(x) * x
+        f_x = f(x)
+        g_x = g(x)
+
+        pp('x', x)
+        print('f(x)', f_x)
+        pp('g(x)', g_x)
+
+        df_dx = sp.Matrix([[f_x]]).jacobian(x)
+        dg_dx = g_x.jacobian(x)
+
+        pp('df_dx', df_dx)
+        pp('dg_dx', dg_dx)
+        self.assertEqual(dg_dx, x.T * df_dx + f_x * sp.eye(3))
+
+
+# Appendix A
+class TestProductRule(TestCase):
+    def test_product_rule1(self):
+        x1, x2, x3 = sp.symbols(['x1', 'x2', 'x3'], Real=True)
+        x = Matrix([x1, x2, x3])
+        f = Matrix([2 * x1 * x2 + 3 * x1 - x2, x1 * x1 - 3 * x1 * x2 + 4 * x3])
+        g = x1 + 5 * x2 + x2 * x3
+        h = f * g
+        dh_dx = h.jacobian(x)
+        df_dx = f.jacobian(x)
+        dg_dx = to_matrix(g).jacobian(x)
+        self.assertTrue(dh_dx.equals(df_dx * g + f * dg_dx))
+
+    def test_product_rule2(self):
+        x1, x2, x3 = sp.symbols(['x1', 'x2', 'x3'], Real=True)
+        x = Matrix([x1, x2, x3])
+        f = Matrix([[2 * x1 * x2 + 3 * x1 - x2, x1 * x1 - 3 * x1 * x2 + 4 * x3]])
+        g = x1 + 5 * x2 + x2 * x3
+        h = f * g
+        dh_dx = h.jacobian(x)
+        df_dx = f.jacobian(x)
+        dg_dx = to_matrix(g).jacobian(x)
+        self.assertTrue(dh_dx.equals(df_dx * g + f.T * dg_dx))
+
+    def test_product_rule3(self):
+        m, n = 2, 3
+        x1, x2, x3 = sp.symbols(['x1', 'x2', 'x3'], Real=True)
+        x = Matrix([x1, x2, x3])
+        A = matrix('A', m, n)
+        f = Matrix([[2 * x1 * x2 + 3 * x1 - x2, x1 * x1 - 3 * x1 * x2 + 4 * x3]])
+        g = f * A
+        df_dx = f.jacobian(x)
+        dg_dx = g.jacobian(x)
+        self.assertTrue(dg_dx.equals(A.T * df_dx))
+
+    def test_product_rule4(self):
+        m, n = 2, 3
+        x1, x2, x3 = sp.symbols(['x1', 'x2', 'x3'], Real=True)
+        x = Matrix([x1, x2, x3])
+        A = matrix('A', m, n)
+        f = Matrix([2 * x1 * x2 + 3 * x1 - x2, x1 * x1 - 3 * x1 * x2 + 4 * x3, 2 * x1 + 3 * x2 + 4 * x3])
+        g = A * f
+        df_dx = f.jacobian(x)
+        dg_dx = g.jacobian(x)
+        self.assertTrue(dg_dx.equals(A * df_dx))
+
     def test_chain_rule(self):
         x = matrix('x', 1, 3)
         y = matrix('y', 1, 3)
@@ -37,76 +102,6 @@ class TestLemmas(TestCase):
         pp('dg_dx', dg_dx)
         pp('dg_dy * df_dx', dg_dy * df_dx)
         self.assertEqual(dg_dx, dg_dy * df_dx)
-
-    def test_lemma_fx_x(self):
-        x = matrix('x', 1, 3)
-        f = lambda x: 3 * x[0, 0] + 2 * x[0, 1] + 5 * x[0, 2]
-        g = lambda x: f(x) * x
-        f_x = f(x)
-        g_x = g(x)
-
-        pp('x', x)
-        print('f(x)', f_x)
-        pp('g(x)', g_x)
-
-        df_dx = sp.Matrix([[f_x]]).jacobian(x)
-        dg_dx = g_x.jacobian(x)
-
-        pp('df_dx', df_dx)
-        pp('dg_dx', dg_dx)
-        self.assertEqual(dg_dx, x.T * df_dx + f_x * sp.eye(3))
-
-
-class TestProductRule(TestCase):
-    def test_product_rule1(self):
-        x1, x2, x3 = sp.symbols(['x1', 'x2', 'x3'], Real=True)
-        x = Matrix([x1, x2, x3])
-        f = Matrix([2 * x1 * x2 + 3 * x1 - x2, x1 * x1 - 3 * x1 * x2 + 4 * x3])
-        g_ = x1 + 5 * x2 + x2 * x3
-        g = Matrix([g_])
-        h = f * g_
-        dh_dx = h.jacobian(x)
-        df_dx = f.jacobian(x)
-        dg_dx = to_matrix(g).jacobian(x)
-        rhs = df_dx * g_ + f * dg_dx
-        self.assertTrue(equal_matrices(dh_dx, rhs))
-
-    def test_product_rule2(self):
-        x1, x2, x3 = sp.symbols(['x1', 'x2', 'x3'], Real=True)
-        x = Matrix([x1, x2, x3])
-        f = Matrix([[2 * x1 * x2 + 3 * x1 - x2, x1 * x1 - 3 * x1 * x2 + 4 * x3]])
-        g_ = x1 + 5 * x2 + x2 * x3
-        g = Matrix([g_])
-        h = f * g_
-        dh_dx = h.jacobian(x)
-        df_dx = f.jacobian(x)
-        dg_dx = to_matrix(g).jacobian(x)
-        rhs = df_dx * g_ + f.T * dg_dx
-        self.assertTrue(equal_matrices(dh_dx, rhs))
-
-    def test_product_rule3(self):
-        m, n = 2, 3
-        x1, x2, x3 = sp.symbols(['x1', 'x2', 'x3'], Real=True)
-        x = Matrix([x1, x2, x3])
-        A = matrix('A', m, n)
-        f = Matrix([[2 * x1 * x2 + 3 * x1 - x2, x1 * x1 - 3 * x1 * x2 + 4 * x3]])
-        g = f * A
-        df_dx = f.jacobian(x)
-        dg_dx = g.jacobian(x)
-        rhs = A.T * df_dx
-        self.assertTrue(equal_matrices(dg_dx, rhs))
-
-    def test_product_rule4(self):
-        m, n = 2, 3
-        x1, x2, x3 = sp.symbols(['x1', 'x2', 'x3'], Real=True)
-        x = Matrix([x1, x2, x3])
-        A = matrix('A', m, n)
-        f = Matrix([2 * x1 * x2 + 3 * x1 - x2, x1 * x1 - 3 * x1 * x2 + 4 * x3, 2 * x1 + 3 * x2 + 4 * x3])
-        g = A * f
-        df_dx = f.jacobian(x)
-        dg_dx = g.jacobian(x)
-        rhs = A * df_dx
-        self.assertTrue(equal_matrices(dg_dx, rhs))
 
 
 if __name__ == '__main__':
