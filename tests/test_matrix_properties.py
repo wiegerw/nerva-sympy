@@ -7,7 +7,7 @@
 from unittest import TestCase
 
 from nerva_sympy.matrix_operations import *
-from utilities import matrix
+from utilities import matrix, to_number
 
 
 # Appendix A
@@ -65,6 +65,26 @@ class TestMatrixProperties(TestCase):
         Z1 = join_rows([X.row(i) * ones(n) * Y.row(i) for i in range(m)])
         Z2 = hadamard(X * ones(n) * ones(n).T, Y)
         self.assertTrue(Z1.equals(Z2))
+
+    def test_property4_derivation(self):
+        m = 3
+        n = 4
+        X = matrix('X', m, n)
+        Y = matrix('Y', m, n)
+        Z = join_rows([X.row(i) * Y.row(i).T * Y.row(i) for i in range(m)])
+        for i in range(m):
+            x_i = X.row(i)
+            y_i = Y.row(i)
+            z_i = Z.row(i)
+            for j in range(n):
+                y_ij = y_i[j]
+                z_ij = z_i[j]
+                self.assertEqual(z_ij, to_number(x_i * y_i.T) * y_ij)
+        R = Matrix([[to_number(X.row(i) * Y.row(i).T) for j in range(n)] for i in range(m)])
+        self.assertTrue(Z.equals(hadamard(R, Y)))
+        rhs = Matrix([[to_number(X.row(i) * Y.row(i).T)] for i in range(m)])
+        self.assertTrue(diag(X * Y.T).equals(rhs))
+        self.assertTrue(R.equals(diag(X * Y.T) * ones(n).T))
 
 
 class TestDerivatives(TestCase):
