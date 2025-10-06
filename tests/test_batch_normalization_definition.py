@@ -20,9 +20,13 @@ class TestBatchNormalizationDefinition(TestCase):
         N = 4
         D = 3
         X = matrix('x', N, D)
+        beta = matrix('beta', 1, D)
+        gamma = matrix('gamma', 1, D)
+
         R = X - (ones(N, N) / N) * X
         Sigma = diag(R.T * R).T / N
         mu = (ones(N).T * X) / N
+        Z = hadamard(ones(N) * inv_sqrt(Sigma), R)
 
         self.assertTrue(R.shape == (N, D))
         self.assertTrue(Sigma.shape == (1, D))
@@ -35,6 +39,12 @@ class TestBatchNormalizationDefinition(TestCase):
         sigma2 = lambda j: (R.col(j).T * R.col(j) / N)[0]  # sigma2(j) is the j-th element of Sigma
         for j in range(D):
             self.assertEqual(sigma2(j), Sigma[0, j])
+
+        Y = hadamard(ones(N) * gamma, Z) + ones(N) * beta
+        for i in range(N):
+            z_i = Z.row(i)
+            y_i = hadamard(gamma, z_i) + beta
+            self.assertEqual(y_i, Y.row(i))
 
 
 if __name__ == '__main__':
