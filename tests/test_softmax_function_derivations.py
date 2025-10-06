@@ -5,6 +5,8 @@
 
 from unittest import TestCase
 
+from nerva_sympy.loss_functions import Softmax_cross_entropy_loss, Cross_entropy_loss
+
 from nerva_sympy.matrix_operations import *
 from nerva_sympy.softmax_functions import *
 
@@ -17,9 +19,6 @@ class TestSoftmaxDerivation(TestCase):
     # section 4
     def test_dsoftmax_dz_derivation(self):
         K = 3
-
-        def softmax(z: Matrix) -> Matrix:
-            return reciprocal(rows_sum(exp(z))) * exp(z)
 
         z = matrix('z', 1, K)
         y = softmax(z)
@@ -36,6 +35,67 @@ class TestSoftmaxDerivation(TestCase):
         self.assertTrue(equal_matrices(Diag(exp(z)) * to_number(rhs), Diag(y)))
         self.assertTrue(equal_matrices(exp(z).T * (exp(z) / (R * R)), y.T * y))
         self.assertTrue(equal_matrices(dsoftmax_dz, Diag(y) - y.T * y))
+
+    def test_softmax_definition_section_5_1(self):
+        K = 3
+        N = 4
+
+        z = matrix('z', 1, K)
+        self.assertTrue(softmax(z).equals(exp(z) / to_number(exp(z) * ones(K))))
+        for i in range(K):
+            self.assertEqual(softmax(z)[i], sp.exp(z[i]) / sum(sp.exp(z[k]) for k in range(K)))
+
+        Z = matrix('Z', N, K)
+        self.assertTrue(softmax(Z).equals(hadamard(exp(Z), reciprocal(exp(Z) * ones(K)) * ones(K).T)))
+        for i in range(N):
+            self.assertTrue(softmax(Z).row(i).equals(softmax(Z.row(i))))
+
+    def test_softmax_derivation_section_5_1(self):
+        K = 3
+
+        z = matrix('z', 1, K)
+        y = softmax(z)
+
+        e1 = softmax(z).jacobian(z)
+        e2 = (exp(z) / to_number(exp(z) * ones(K))).jacobian(z)
+        e3 = exp(z).jacobian(z) / to_number(exp(z) * ones(K)) + exp(z).T * reciprocal(exp(z) * ones(K)).jacobian(z)
+        e4 = Diag(exp(z)) / to_number(exp(z) * ones(K)) - exp(z).T * exp(z) / (to_number(exp(z) * ones(K))**2)
+        e5 = Diag(exp(z) / to_number(exp(z) * ones(K))) - (exp(z) / to_number(exp(z) * ones(K))).T * exp(z) / to_number(exp(z) * ones(K))
+        e6 = Diag(y) - y.T * y
+
+        self.assertTrue(e1.equals(e2))
+        self.assertTrue(e2.equals(e3))
+        self.assertTrue(e3.equals(e4))
+        self.assertTrue(e4.equals(e5))
+        self.assertTrue(e5.equals(e6))
+
+    def test_softmax_gradient_section_5_1(self):
+        K = 3
+        N = 4
+        Z = matrix('Z', N, K)
+        Y = matrix('Y', N, K)
+        T = matrix('T', N, K)
+        L = Cross_entropy_loss
+
+        for i in range(N):
+            dL_dz_i = gradient(L(softmax(Z), T), Z.row(i))
+            dL_dy_i = substitute(gradient(L(Y, T), Y.row(i)), [(Y, softmax(Z))])
+            dsoftmax_dz_i = softmax(Z.row(i)).jacobian(Z.row(i))
+            self.assertTrue(dL_dz_i.equals(dL_dy_i * dsoftmax_dz_i))
+
+            y_i = softmax(Z.row(i))
+            Dy_i = dL_dy_i
+            Dz_i = dL_dz_i
+            e1 = Dz_i
+            e2 = Dy_i * (Diag(y_i) - y_i.T * y_i)
+            e3 = hadamard(Dy_i, y_i) - Dy_i * y_i.T * y_i
+            self.assertTrue(e1.equals(e2))
+            self.assertTrue(e2.equals(e3))
+
+        DY = substitute(gradient(L(Y, T), Y), [(Y, softmax(Z))])
+        DZ = substitute(hadamard(DY - diag(DY * Y.T) * ones(K).T, Y), [(Y, softmax(Z))])
+        DZ1 = gradient(L(softmax(Z), T), Z)
+        self.assertTrue(DZ.equals(DZ1))
 
     def test_softmax_derivation_appendix_C1(self):
         D = 3
