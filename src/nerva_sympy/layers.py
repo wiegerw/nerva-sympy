@@ -224,7 +224,7 @@ class LogSoftmaxLayer(LinearLayer):
         W = self.W
         Z = self.Z
 
-        DZ = DY - hadamard(softmax(Z), column_repeat(rows_sum(DY), N))
+        DZ = DY - hadamard(softmax(Z), column_repeat(rows_sum(DY), K))
         DW = DZ.T * X
         Db = columns_sum(DZ)
         DX = DZ * W

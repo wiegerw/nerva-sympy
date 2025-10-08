@@ -8,7 +8,7 @@
 
 from unittest import TestCase
 
-from nerva_sympy.loss_functions import Squared_error_loss
+from nerva_sympy.loss_functions import Squared_error_loss, Cross_entropy_loss
 from nerva_sympy.matrix_operations import *
 from nerva_sympy.softmax_functions import softmax, log_softmax
 
@@ -244,6 +244,34 @@ class TestSoftmaxLayerDerivation(TestCase):
         self.assertTrue(equal_matrices(Dzi, R1))
         self.assertTrue(equal_matrices(R1, R2))
 
+    def test_softmax_gradient(self):
+        K = 3
+        N = 4
+        Z = matrix('Z', N, K)
+        Y = matrix('Y', N, K)
+        T = matrix('T', N, K)
+        L = Cross_entropy_loss
+
+        for i in range(N):
+            dL_dz_i = gradient(L(softmax(Z), T), Z.row(i))
+            dL_dy_i = substitute(gradient(L(Y, T), Y.row(i)), [(Y, softmax(Z))])
+            dsoftmax_dz_i = softmax(Z.row(i)).jacobian(Z.row(i))
+            self.assertTrue(dL_dz_i.equals(dL_dy_i * dsoftmax_dz_i))
+
+            y_i = softmax(Z.row(i))
+            Dy_i = dL_dy_i
+            Dz_i = dL_dz_i
+            e1 = Dz_i
+            e2 = Dy_i * (Diag(y_i) - y_i.T * y_i)
+            e3 = hadamard(Dy_i, y_i) - Dy_i * y_i.T * y_i
+            self.assertTrue(e1.equals(e2))
+            self.assertTrue(e2.equals(e3))
+
+        DY = substitute(gradient(L(Y, T), Y), [(Y, softmax(Z))])
+        DZ = substitute(hadamard(DY - diag(DY * Y.T) * ones(K).T, Y), [(Y, softmax(Z))])
+        DZ1 = gradient(L(softmax(Z), T), Z)
+        self.assertTrue(DZ.equals(DZ1))
+
 
 class TestLogSoftmaxLayerDerivation(TestCase):
     def test_dL_dzi_derivation(self):
@@ -281,6 +309,43 @@ class TestLogSoftmaxLayerDerivation(TestCase):
         R = substitute(identity(K) - row_repeat(softmax(z_i), K), (z, Z))
         self.assertTrue(equal_matrices(dlog_softmax_dzi, R))
         self.assertTrue(equal_matrices(Dzi, Dyi * R))
+
+    def test_log_softmax_gradient(self):
+        K = 3
+        N = 4
+        Z = matrix('Z', N, K)
+        Y = matrix('Y', N, K)
+        T = matrix('T', N, K)
+        L = Cross_entropy_loss
+
+        # replace Y by Y_x
+        def expand(x):
+            return substitute(x, [(Y, log_softmax(Z))])
+
+        for i in range(N):
+            dL_dz_i = gradient(L(log_softmax(Z), T), Z.row(i))
+            dL_dy_i = expand(gradient(L(Y, T), Y.row(i)))
+            dlog_softmax_dz_i = log_softmax(Z.row(i)).jacobian(Z.row(i))
+            self.assertTrue(dL_dz_i.equals(dL_dy_i * dlog_softmax_dz_i))
+
+            e1 = dL_dz_i
+            e2 = dL_dy_i * dlog_softmax_dz_i
+            e3 = dL_dy_i * (identity(K) - ones(K) * softmax(Z.row(i)))
+            self.assertTrue(e1.equals(e2))
+            self.assertTrue(e2.equals(e3))
+
+            Dz_i = dL_dz_i
+            Dy_i = dL_dy_i
+            f1 = Dz_i
+            f2 = Dy_i * (identity(K) - ones(K) * softmax(Z.row(i)))
+            f3 = Dy_i - Dy_i * ones(K) * softmax(Z.row(i))
+            self.assertTrue(f1.equals(f2))
+            self.assertTrue(f2.equals(f3))
+
+        DY = expand(gradient(L(Y, T), Y))
+        DZ = expand(DY - hadamard(softmax(Z), column_repeat(rows_sum(DY), K)))
+        DZ1 = gradient(L(log_softmax(Z), T), Z)
+        self.assertTrue(DZ.equals(DZ1))
 
 
 class TestBatchNormDerivation(TestCase):
