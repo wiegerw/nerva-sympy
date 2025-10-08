@@ -214,6 +214,7 @@ def substitute(expr, substitutions: Union[Tuple[Matrix, Matrix], List[Tuple[Matr
         expr = expr.subs(sigma)
     return expr
 
+
 def jacobian(x: Matrix, y) -> Matrix:
     assert is_column_vector(x) or is_row_vector(x)
     return x.jacobian(y)

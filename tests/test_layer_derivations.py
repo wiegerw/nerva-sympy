@@ -206,6 +206,58 @@ class TestLinearLayerDerivation(TestCase):
                 self.assertTrue(e6.equals(e7))
 
 
+    def test_derivation_DW_new(self):
+        N = 3
+        D = 4
+        K = 2
+
+        X = matrix('X', N, D)
+        W = matrix('D', K, D)
+        Y = matrix('Y', N, K)
+        b = matrix('b', 1, K)
+        T = matrix('T', N, K)
+
+        Y_x = X * W.T + ones(N) * b
+        L_x = Squared_error_loss(Y_x, T)
+        L_y = Squared_error_loss(Y, T)
+
+        # replace Y by Y_x
+        def expand(x):
+            if isinstance(x, sp.MatrixBase):
+                return substitute(x, [(Y, Y_x)])
+            else:
+                return to_number(substitute(to_matrix(x), [(Y, Y_x)]))
+
+        DY = join_rows([expand(gradient(L_y, Y.row(n))) for n in range(N)])
+        DW = DY.T * X
+
+        for i in range(K):
+            for j in range(D):
+                e1 = sp.diff(L_x, W[i, j])
+                e2 = sum1(expand(sp.diff(L_y, Y[n, k])) * sp.diff(Y_x[n, k], W[i, j]) for k in range(K) for n in range(N))
+                self.assertTrue(e1.equals(e2))
+
+        for n in range(N):
+            for k in range(K):
+                self.assertEqual(Y_x[n, k], sum1(X[n, d] * W[k, d] for d in range(D)) + b[k])
+
+        for i in range(K):
+            for j in range(D):
+                for n in range(N):
+                    for k in range(K):
+                        e1 = sp.diff(Y_x[n, k], W[i, j])
+                        e2 = X[n, j] if k == i else 0
+                        self.assertTrue(e1.equals(e2))
+
+        for i in range(K):
+            for j in range(D):
+                e1 = sp.diff(L_x, W[i, j])
+                e2 = sum1(expand(sp.diff(L_y, Y[n, i])) * X[n, j] for n in range(N))
+                e3 = DW[i, j]
+                self.assertTrue(e1.equals(e2))
+                self.assertTrue(e2.equals(e3))
+
+
 class TestSoftmaxLayerDerivation(TestCase):
     def test_dL_dzi_derivation(self):
         N = 2
