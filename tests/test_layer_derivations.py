@@ -8,11 +8,11 @@
 
 from unittest import TestCase
 
-import sympy as sp
+from nerva_sympy.loss_functions import Squared_error_loss
 from nerva_sympy.matrix_operations import *
 from nerva_sympy.softmax_functions import softmax, log_softmax
 
-from utilities import equal_matrices, matrix, to_matrix, to_number
+from utilities import equal_matrices, matrix, to_matrix, to_number, sum1
 
 Matrix = sp.Matrix
 
@@ -84,7 +84,7 @@ class TestLinearLayerDerivation(TestCase):
         j = 2
         k = 1
 
-        e_i = sp.Matrix([[1 if j == i else 0 for j in range(K)]]).T  # unit column vector with a 1 on the i-th position
+        e_i = identity(K).col(i)  # unit column vector with a 1 on the i-th position
         y_i = Y.row(i)  # 1 x K
         w_i = w.row(i)
         dyi_dwi = y_i.jacobian(w_i)
@@ -97,6 +97,113 @@ class TestLinearLayerDerivation(TestCase):
         w_ij = to_matrix(w[i, j])
         dyk_dwij = y_k.jacobian(w_ij)
         self.assertTrue(equal_matrices(dyk_dwij, x[k, j] * e_i))
+
+    def test_derivation_DX(self):
+        N = 3
+        D = 4
+        K = 2
+
+        X = matrix('X', N, D)
+        W = matrix('D', K, D)
+        Y = matrix('Y', N, K)
+        b = matrix('b', 1, K)
+        T = matrix('T', N, K)
+
+        Y_x = X * W.T + ones(N) * b
+        L_x = Squared_error_loss(Y_x, T)
+        L_y = Squared_error_loss(Y, T)
+
+        # replace Y by Y_x
+        def expand(x):
+            return substitute(x, [(Y, Y_x)])
+
+        for i in range(N):
+            Dx_i = gradient(L_x, X.row(i))
+            Dy_i = expand(gradient(L_y, Y.row(i)))
+            e1 = Dx_i
+            e2 = sum((expand(gradient(L_y, Y.row(n))) * Y_x.row(n).jacobian(X.row(i)) for n in range(N)), sp.zeros(1, D))
+            e3 = Dy_i * Y_x.row(i).jacobian(X.row(i))
+            e4 = Dy_i * W
+            self.assertTrue(e1.equals(e2))
+            self.assertTrue(e2.equals(e3))
+            self.assertTrue(e3.equals(e4))
+
+    def test_derivation_Db(self):
+        N = 3
+        D = 4
+        K = 2
+
+        X = matrix('X', N, D)
+        W = matrix('D', K, D)
+        Y = matrix('Y', N, K)
+        b = matrix('b', 1, K)
+        T = matrix('T', N, K)
+
+        Y_x = X * W.T + ones(N) * b
+        L_x = Squared_error_loss(Y_x, T)
+        L_y = Squared_error_loss(Y, T)
+
+        # replace Y by Y_x
+        def expand(x):
+            return substitute(x, [(Y, Y_x)])
+
+        DY = join_rows([expand(gradient(L_y, Y.row(n))) for n in range(N)])
+
+        for i in range(N):
+            Db = gradient(L_x, b)
+            e1 = Db
+            e2 = sum((expand(gradient(L_y, Y.row(n))) * Y_x.row(n).jacobian(b) for n in range(N)), sp.zeros(1, K))
+            e3 = sum((expand(gradient(L_y, Y.row(n))) * identity(K) for n in range(N)), sp.zeros(1, K))
+            e4 = sum((expand(gradient(L_y, Y.row(n))) for n in range(N)), sp.zeros(1, K))
+            e5 = ones(N).T * DY
+            self.assertTrue(e1.equals(e2))
+            self.assertTrue(e2.equals(e3))
+            self.assertTrue(e3.equals(e4))
+            self.assertTrue(e4.equals(e5))
+
+    def test_derivation_DW(self):
+        N = 3
+        D = 4
+        K = 2
+
+        X = matrix('X', N, D)
+        W = matrix('D', K, D)
+        Y = matrix('Y', N, K)
+        b = matrix('b', 1, K)
+        T = matrix('T', N, K)
+
+        Y_x = X * W.T + ones(N) * b
+        L_x = Squared_error_loss(Y_x, T)
+        L_y = Squared_error_loss(Y, T)
+
+        # replace Y by Y_x
+        def expand(x):
+            return substitute(x, [(Y, Y_x)])
+
+        DY = join_rows([expand(gradient(L_y, Y.row(n))) for n in range(N)])
+
+        for i in range(K):
+            e_i = identity(K).col(i)
+            for j in range(D):
+                w_ij = W[i, j]
+                e1 = gradient(L_x, w_ij)
+                e2 = sum1((expand(gradient(L_y, Y.row(n))) * Y_x.row(n).jacobian([w_ij]) for n in range(N)))
+                e3 = sum1((expand(gradient(L_y, Y.row(n))) * (X[n, j] * e_i) for n in range(N)))
+                e4 = sum1(sum1(expand(gradient(L_y, Y[n, k])) * X[n, j] * e_i[k] for n in range(N)) for k in range(K))
+                e5 = sum1(e_i[k] * sum1(expand(gradient(L_y, Y[n, k])) * X[n, j] for n in range(N)) for k in range(K))
+                e6 = sum1(e_i[k] * (DY.T * X)[k, j] for k in range(K))
+                e7 = (DY.T * X)[i, j]
+                e1 = to_number(e1)
+                e2 = to_number(e2)
+                e3 = to_number(e3)
+                e4 = to_number(e4)
+                e5 = to_number(e5)
+                self.assertTrue(e1.equals(e2))
+                self.assertTrue(e2.equals(e3))
+                self.assertTrue(e3.equals(e4))
+                self.assertTrue(e4.equals(e5))
+                self.assertTrue(e5.equals(e6))
+                self.assertTrue(e6.equals(e7))
 
 
 class TestSoftmaxLayerDerivation(TestCase):

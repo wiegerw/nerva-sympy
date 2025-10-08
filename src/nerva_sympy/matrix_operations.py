@@ -191,13 +191,15 @@ def join_rows(rows: List[Matrix]) -> Matrix:
     return Matrix(rows)
 
 
-def gradient(f, X: Matrix) -> Matrix:
+def gradient(f, X) -> Matrix:
     """
     Returns the derivative of a matrix function
     :param f: a real-valued function
     :param X: a matrix
     :return: the derivative of f
     """
+    if not isinstance(X, sp.MatrixBase):
+        X = sp.Matrix([[X]])
     m, n = X.shape
     return Matrix([[sp.diff(f, X[i, j]) for j in range(n)] for i in range(m)])
 

@@ -154,6 +154,20 @@ def squared_error(X: Matrix):
     return sum(f(X.col(j)) for j in range(n))
 
 
+def sum1(iterable, start=None):
+    iterable = list(iterable)
+    if not iterable:
+        # nothing to sum → just return start or 0x0
+        return start if start is not None else sp.zeros(0, 0)
+    if start is None:
+        first = iterable[0]
+        if isinstance(first, sp.MatrixBase):
+            start = sp.zeros(*first.shape)
+        else:
+            start = 0
+    return sum(iterable, start)
+
+
 def pp(name: str, x: sp.Matrix):
     if VERBOSE:
         print(f'{name} ({x.shape[0]}x{x.shape[1]})')
