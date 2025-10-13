@@ -186,7 +186,7 @@ class SoftmaxLayer(LinearLayer):
         X = self.X
         W = self.W
 
-        DZ = hadamard(Y, DY - column_repeat(diag(DY * Y.T), N))
+        DZ = hadamard(Y, DY - column_repeat(diag(DY * Y.T), K))
         DW = DZ.T * X
         Db = columns_sum(DZ)
         DX = DZ * W
