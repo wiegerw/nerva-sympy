@@ -221,18 +221,20 @@ class SigmoidActivation(ActivationFunction):
 class SReLUActivation(ActivationFunction):
     """Smooth rectified linear activation with learnable parameters."""
     def __init__(self, al=0, tl=0, ar=0, tr=1):
-        self.al = al
-        self.tl = tl
-        self.ar = ar
-        self.tr = tr
+        # Store the parameters and their gradients in matrices.
+        # This is to make them usable for optimizers.
+        self.x = Matrix([al, tl, ar, tr])
+        self.Dx = Matrix([0, 0, 0, 0])
 
     def __call__(self, X: Matrix) -> Matrix:
         """Apply SReLU activation with current parameters."""
-        return Srelu(self.al, self.tl, self.ar, self.tr)(X)
+        al, tl, ar, tr = self.x
+        return Srelu(al, tl, ar, tr)(X)
 
     def gradient(self, X: Matrix) -> Matrix:
         """Compute gradient of SReLU with current parameters."""
-        return Srelu_gradient(self.al, self.tl, self.ar, self.tr)(X)
+        al, tl, ar, tr = self.x
+        return Srelu_gradient(al, tl, ar, tr)(X)
 
     def __repr__(self) -> str:
         al, tl, ar, tr = [float(v) for v in self.x]
