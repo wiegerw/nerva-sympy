@@ -39,7 +39,7 @@ class GradientDescentOptimizer(Optimizer):
 
     def update(self, eta):
         """Apply gradient descent update step."""
-        self.x -= eta * self.Dx
+        self.x[:, :] = self.x - eta * self.Dx
 
     def __repr__(self) -> str:
         return "GradientDescent()"
@@ -59,7 +59,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
     def update(self, eta):
         """Apply momentum update step."""
         self.delta_x = self.mu * self.delta_x - eta * self.Dx
-        self.x += self.delta_x
+        self.x[:, :] = self.x + self.delta_x
 
     def __repr__(self) -> str:
         return f"Momentum(mu={float(self.mu)})"
@@ -75,7 +75,7 @@ class NesterovOptimizer(MomentumOptimizer):
     def update(self, eta):
         """Apply Nesterov accelerated gradient update step."""
         self.delta_x = self.mu * self.delta_x - eta * self.Dx
-        self.x += self.mu * self.delta_x - eta * self.Dx
+        self.x[:, :] = self.x + self.mu * self.delta_x - eta * self.Dx
 
     def __repr__(self) -> str:
         return f"Nesterov(mu={float(self.mu)})"

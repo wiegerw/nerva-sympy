@@ -66,8 +66,8 @@ class LinearLayer(Layer):
         Db = columns_sum(DY)
         DX = DY * W
 
-        self.DW[:] = DW
-        self.Db[:] = Db
+        self.DW[:, :] = DW
+        self.Db[:, :] = Db
         self.DX = DX
 
     def input_size(self) -> int:
@@ -117,8 +117,8 @@ class ActivationLayer(LinearLayer):
         DX = DZ * W
 
         self.DZ = DZ
-        self.DW[:] = DW
-        self.Db[:] = Db
+        self.DW[:, :] = DW
+        self.Db[:, :] = Db
         self.DX = DX
 
 
@@ -180,7 +180,7 @@ class SoftmaxLayer(LinearLayer):
         return Y
 
     def backpropagate(self, Y: Matrix, DY: Matrix) -> None:
-        K, N = self.Z.shape
+        N, K = self.Z.shape
         X = self.X
         W = self.W
 
@@ -190,8 +190,8 @@ class SoftmaxLayer(LinearLayer):
         DX = DZ * W
 
         self.DZ = DZ
-        self.DW[:] = DW
-        self.Db[:] = Db
+        self.DW[:, :] = DW
+        self.Db[:, :] = Db
         self.DX = DX
 
 
@@ -215,7 +215,7 @@ class LogSoftmaxLayer(LinearLayer):
         return Y
 
     def backpropagate(self, Y: Matrix, DY: Matrix) -> None:
-        K, N = self.Z.shape
+        N, K = self.Z.shape
         X = self.X
         W = self.W
         Z = self.Z
@@ -226,8 +226,8 @@ class LogSoftmaxLayer(LinearLayer):
         DX = DZ * W
 
         self.DZ = DZ
-        self.DW[:] = DW
-        self.Db[:] = Db
+        self.DW[:, :] = DW
+        self.Db[:, :] = Db
         self.DX = DX
 
 
@@ -260,7 +260,7 @@ class BatchNormalizationLayer(Layer):
         Z = hadamard(row_repeat(inv_sqrt_Sigma, N), R)
         Y = hadamard(row_repeat(gamma, N), Z) + row_repeat(beta, N)
 
-        self.inv_sqrt_Sigma[:] = inv_sqrt_Sigma
+        self.inv_sqrt_Sigma[:, :] = inv_sqrt_Sigma
         self.Z = Z
         return Y
 
@@ -277,8 +277,8 @@ class BatchNormalizationLayer(Layer):
         DX = hadamard(row_repeat(inv_sqrt_Sigma / N, N), (N * identity(N) - ones(N, N)) * DZ - hadamard(Z, row_repeat(diag(Z.T * DZ).T, N)))
 
         self.DZ = DZ
-        self.Dbeta[:] = Dbeta
-        self.Dgamma[:] = Dgamma
+        self.Dbeta[:, :] = Dbeta
+        self.Dgamma[:, :] = Dgamma
         self.DX = DX
 
     def input_size(self) -> int:
