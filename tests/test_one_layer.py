@@ -29,10 +29,10 @@ from nerva_sympy.activation_functions import (
 
 from utilities import to_numpy
 
-# tolerances similar to torch-based test
 ESSENTIAL_ATOL = 1e-6
-ESSENTIAL_RTL = 1e-6
-
+ESSENTIAL_RTOL = 1e-6
+# Optional debug output controlled via ONE_LAYER_DEBUG environment variable.
+# Values: "0" or unset = silent (default), "1" = basic, "2" = verbose tensors.
 DEBUG_LEVEL = int(os.environ.get("ONE_LAYER_DEBUG", "0") or 0)
 
 def _print_debug(msg: str):
@@ -57,7 +57,7 @@ def np_to_sp_matrix(x: np.ndarray, force_row: bool = False) -> sp.Matrix:
         return sp.Matrix(x.tolist())
 
 
-def assert_close(name: str, a: sp.Matrix, b: np.ndarray, atol=ESSENTIAL_ATOL, rtol=ESSENTIAL_RTL):
+def assert_close(name: str, a: sp.Matrix, b: np.ndarray, atol=ESSENTIAL_ATOL, rtol=ESSENTIAL_RTOL):
     A = to_numpy(a)
     B = np.array(b)
     # Harmonize shapes: allow (1,K) vs (K,) and (N,1) vs (N,)
@@ -112,18 +112,8 @@ def run_case(manifest_dir: Path, meta: Dict[str, Any]):
 
     if meta["type"] == "Activation":
         D = meta["D"]; K = meta["K"]
-        act = parse_activation(meta["activation_spec"]) if "activation_spec" in meta else parse_activation(meta["activation"])
-        # Use specialized SReLU layer if applicable so we can collect extra grads
-        if isinstance(act, SReLUActivation):
-            layer = SReLULayer(D, K, act)
-            # If act_x provided, map to parameters al, tl, ar, tr
-            if "act_x" in tensors:
-                act_x = np.array(tensors["act_x"]).reshape(-1)
-                # Expecting 4 parameters in order [al, tl, ar, tr]
-                if act_x.size >= 4:
-                    act.al = float(act_x[0]); act.tl = float(act_x[1]); act.ar = float(act_x[2]); act.tr = float(act_x[3])
-        else:
-            layer = ActivationLayer(D, K, act)
+        act = parse_activation(meta["activation_spec"])
+        layer = SReLULayer(D, K, act) if isinstance(act, SReLUActivation) else ActivationLayer(D, K, act)
         layer.W = np_to_sp_matrix(tensors["W"])  # (K, D)
         layer.b = np_to_sp_matrix(tensors["b"], force_row=True)
         Y = layer.feedforward(X)
@@ -184,8 +174,6 @@ def run_case(manifest_dir: Path, meta: Dict[str, Any]):
         return
 
     if meta["type"] == "BatchNormalization":
-        # N.B. For batch normalization we have to lower the precision. This is because in SymPy
-        # no epsilon is used.
         D = meta["D"]
         layer = BatchNormalizationLayer(D)
         layer.gamma[:, :] = np_to_sp_matrix(tensors["gamma"], force_row=True)  # (1, D)

@@ -5,7 +5,7 @@
 import sympy as sp
 from nerva_sympy.activation_functions import ActivationFunction, SReLUActivation, parse_activation
 from nerva_sympy.matrix_operations import column_repeat, columns_mean, columns_sum, diag, elements_sum, hadamard, \
-    identity, ones, inv_sqrt, row_repeat, rows_sum, zeros
+    identity, ones, inv_sqrt, row_repeat, rows_sum, zeros, vector_size
 from nerva_sympy.optimizers import CompositeOptimizer, parse_optimizer
 from nerva_sympy.softmax_functions import log_softmax, softmax
 from nerva_sympy.weight_initializers import set_layer_weights

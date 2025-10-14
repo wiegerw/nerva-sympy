@@ -2,11 +2,18 @@
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE or http://www.boost.org/LICENSE_1_0.txt)
 
+"""Activation functions and utilities used by the MLP implementation.
+
+This module provides simple callable classes for common activations and a parser
+that turns textual specifications into activation instances (e.g. "ReLU",
+"LeakyReLU(alpha=0.1)", "SReLU(al=0, tl=0, ar=0, tr=1)").
+"""
+
 import sympy as sp
-from nerva_sympy.utilities import parse_function_call
 from sympy import Lambda, Piecewise
 
-Matrix = sp.Matrix
+from nerva_sympy.utilities import parse_function_call
+from nerva_sympy.matrix_operations import Matrix
 
 # Naming conventions:
 # - lowercase functions operate on real numbers
@@ -80,50 +87,62 @@ def srelu_derivative(al, tl, ar, tr):
 
 
 def Relu(X: Matrix) -> Matrix:
+    """Rectified linear unit activation: max(0, X)."""
     return X.applyfunc(relu)
 
 
 def Relu_gradient(X: Matrix) -> Matrix:
+    """Gradient of ReLU: 1 where X > 0, 0 elsewhere."""
     return X.applyfunc(relu_derivative)
 
 
 def Leaky_relu(alpha):
+    """Leaky ReLU factory: max(X, alpha * X)."""
     return lambda x: x.applyfunc(leaky_relu(alpha))
 
 
 def Leaky_relu_gradient(alpha):
+    """Gradient factory for leaky ReLU."""
     return lambda x: x.applyfunc(leaky_relu_derivative(alpha))
 
 
 def All_relu(alpha):
+    """AllReLU factory."""
     return lambda x: x.applyfunc(all_relu(alpha))
 
 
 def All_relu_gradient(alpha):
+    """Gradient factory for AllReLU."""
     return lambda x: x.applyfunc(all_relu_derivative(alpha))
 
 
 def Hyperbolic_tangent(X: Matrix) -> Matrix:
+    """Hyperbolic tangent activation."""
     return X.applyfunc(hyperbolic_tangent)
 
 
 def Hyperbolic_tangent_gradient(X: Matrix) -> Matrix:
+    """Gradient of tanh: 1 - tanh²(X)."""
     return X.applyfunc(hyperbolic_tangent_derivative)
 
 
 def Sigmoid(X: Matrix) -> Matrix:
+    """Sigmoid activation: 1 / (1 + exp(-X))."""
     return X.applyfunc(sigmoid)
 
 
 def Sigmoid_gradient(X: Matrix) -> Matrix:
+    """Gradient of sigmoid: σ(X) * (1 - σ(X))."""
     return X.applyfunc(sigmoid_derivative)
 
 
 def Srelu(al, tl, ar, tr):
+    """SReLU factory: smooth rectified linear with learnable parameters."""
     return lambda x: x.applyfunc(srelu(al, tl, ar, tr))
 
 
 def Srelu_gradient(al, tl, ar, tr):
+    """Gradient factory for SReLU."""
     return lambda x: x.applyfunc(srelu_derivative(al, tl, ar, tr))
 
 
@@ -152,6 +171,7 @@ class ReLUActivation(ActivationFunction):
 
 
 class LeakyReLUActivation(ActivationFunction):
+    """Leaky ReLU activation: max(x, alpha * x)."""
     def __init__(self, alpha):
         self.alpha = alpha
 

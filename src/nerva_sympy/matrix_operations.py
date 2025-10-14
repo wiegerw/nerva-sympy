@@ -11,7 +11,6 @@ They operate on 1D/2D tensors and keep broadcasting explicit for clarity.
 from typing import List, Tuple, Union
 
 import sympy as sp
-from nerva_sympy.activation_functions import Sigmoid
 
 Matrix = sp.Matrix
 
@@ -202,6 +201,8 @@ def inv_sqrt(X: Matrix) -> Matrix:
 
 def log_sigmoid(X: Matrix) -> Matrix:
     """Element-wise log(sigmoid(X))."""
+    # N.B. We don't provide a numerically stable version in nerva-sympy
+    from nerva_sympy.activation_functions import Sigmoid
     return log(Sigmoid(X))
 
 

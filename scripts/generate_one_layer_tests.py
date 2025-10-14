@@ -4,14 +4,6 @@
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE or http://www.boost.org/LICENSE_1_0.txt)
 
-# Ensure local src/ is used instead of any installed package
-import sys
-from pathlib import Path as _Path
-_repo_root = _Path(__file__).resolve().parents[1]
-_src_path = _repo_root / "src"
-if str(_src_path) not in sys.path:
-    sys.path.insert(0, str(_src_path))
-
 """
 Generate deterministic one-layer forward/backprop test cases for all supported
 layers/activations in this repository. Results are saved as separate .npz files
@@ -44,6 +36,7 @@ from nerva_torch.layers import (
     SoftmaxLayer,
     LogSoftmaxLayer,
     BatchNormalizationLayer,
+    SReLULayer,
 )
 from nerva_torch.activation_functions import (
     ReLUActivation,
@@ -100,8 +93,9 @@ def _mk_linear_case(name: str, N: int, D: int, K: int, rng: torch.Generator, opt
     return case
 
 
-def _mk_activation_case(name: str, N: int, D: int, K: int, act, act_params: Dict[str, Any], rng: torch.Generator, optimizer_spec: str, lr: float):
-    layer = ActivationLayer(D, K, act)
+def _mk_activation_case(name: str, N: int, D: int, K: int, act, rng: torch.Generator, optimizer_spec: str, lr: float):
+    layer = SReLULayer(D, K, act) if isinstance(act, SReLUActivation) else ActivationLayer(D, K, act)
+    layer.set_optimizer(optimizer_spec)
     X = torch.randn(N, D, generator=rng) * 0.5 + 0.1
     layer.W[:] = torch.randn(K, D, generator=rng) * 0.3
     layer.b[:] = torch.randn(K, generator=rng) * 0.1
@@ -115,10 +109,6 @@ def _mk_activation_case(name: str, N: int, D: int, K: int, act, act_params: Dict
         "type": "Activation",
         "optimizer_spec": optimizer_spec,
         "lr": lr,
-        # Keep legacy fields for compatibility
-        "activation": act.__class__.__name__,
-        "activation_params": act_params,
-        # Canonical spec string for parse/print round-trip via __str__
         "activation_spec": str(act),
         "N": N,
         "D": D,
@@ -138,7 +128,6 @@ def _mk_activation_case(name: str, N: int, D: int, K: int, act, act_params: Dict
         case["act_Dx"] = act.Dx.clone()
 
     # optimize
-    layer.set_optimizer(optimizer_spec)
     layer.optimize(lr)
     case["W_opt"] = layer.W.clone()
     case["b_opt"] = layer.b.clone()
@@ -276,12 +265,12 @@ def main():
 
     # Activations (ActivationLayer)
     activations = [
-        (ReLUActivation(), {"alpha": None}, "ReLU"),
-        (LeakyReLUActivation(0.2), {"alpha": 0.2}, "LeakyReLU_0p2"),
-        (AllReLUActivation(0.7), {"alpha": 0.7}, "AllReLU_0p7"),
-        (HyperbolicTangentActivation(), {}, "Tanh"),
-        (SigmoidActivation(), {}, "Sigmoid"),
-        (SReLUActivation(al=0.1, tl=-0.2, ar=0.3, tr=0.5), {"al": 0.1, "tl": -0.2, "ar": 0.3, "tr": 0.5}, "SReLU"),
+        (ReLUActivation(), "ReLU"),
+        (LeakyReLUActivation(0.2), "LeakyReLU_0p2"),
+        (AllReLUActivation(0.7), "AllReLU_0p7"),
+        (HyperbolicTangentActivation(), "Tanh"),
+        (SigmoidActivation(), "Sigmoid"),
+        (SReLUActivation(al=0.1, tl=-0.2, ar=0.3, tr=0.5), "SReLU"),
     ]
 
     # Optimizers used for the optimize step
@@ -299,12 +288,12 @@ def main():
                     _materialize_case(out_dir, index, i, case); i += 1
 
     # ActivationLayer cases for all combinations
-    for act, act_params, tag in activations:
+    for act, tag in activations:
         for N in Ns:
             for D in Ds:
                 for K in Ks:
                     for opt in optimizers:
-                        case = _mk_activation_case(f"Activation_{tag}_D{D}_K{K}_{opt}", N=N, D=D, K=K, act=act, act_params=act_params, rng=rng, optimizer_spec=opt, lr=args.lr)
+                        case = _mk_activation_case(f"Activation_{tag}_D{D}_K{K}_{opt}", N=N, D=D, K=K, act=act, rng=rng, optimizer_spec=opt, lr=args.lr)
                         _materialize_case(out_dir, index, i, case); i += 1
 
     # Softmax and LogSoftmax for all combinations
