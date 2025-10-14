@@ -2,6 +2,12 @@
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE or http://www.boost.org/LICENSE_1_0.txt)
 
+"""Matrix operations built on top of torch to support the math in the library.
+
+The functions here intentionally mirror the names in the accompanying docs.
+They operate on 1D/2D tensors and keep broadcasting explicit for clarity.
+"""
+
 from typing import List, Tuple, Union
 
 import sympy as sp
@@ -25,11 +31,13 @@ def vector_size(x: Matrix) -> int:
 
 
 def is_square(X: Matrix) -> bool:
+    """Check if X is a square matrix."""
     m, n = X.shape
     return m == n
 
 
 def dot(x: Matrix, y: Matrix):
+    """Dot product of vectors x and y."""
     if is_column_vector(x) and is_column_vector(y):
         return (x.T * y)[0, 0]
     elif is_row_vector(x) and is_row_vector(y):
@@ -59,10 +67,12 @@ def identity(n: int) -> Matrix:
 
 
 def product(X: Matrix, Y: Matrix) -> Matrix:
+    """Matrix multiplication X * Y."""
     return X * Y
 
 
 def hadamard(X: Matrix, Y: Matrix) -> Matrix:
+    """Element-wise product X ⊙ Y."""
     assert X.shape == Y.shape
     m, n = X.shape
     return Matrix([[X[i, j] * Y[i, j] for j in range(n)] for i in range(m)])
@@ -73,12 +83,14 @@ def hadamard(X: Matrix, Y: Matrix) -> Matrix:
 
 
 def diag(X: Matrix) -> Matrix:
+    """Extract diagonal of X as a vector."""
     assert is_square(X)
     m, n = X.shape
     return Matrix([[X[i, i] for i in range(m)]]).T
 
 
 def Diag(x: Matrix) -> Matrix:
+    """Create diagonal matrix with x as diagonal."""
     assert is_column_vector(x) or is_row_vector(x)
     return sp.diag(*x)
 
@@ -92,26 +104,30 @@ def elements_sum(X: Matrix):
 
 
 def column_repeat(x: Matrix, n: int) -> Matrix:
+    """Repeat column vector x horizontally n times."""
     assert is_column_vector(x)
     rows, cols = x.shape
     rows = [[x[i, 0]] * n for i in range(rows)]
     return Matrix(rows)
 
 
-def row_repeat(x: Matrix, n: int) -> Matrix:
+def row_repeat(x: Matrix, m: int) -> Matrix:
+    """Repeat row vector x vertically m times."""
     assert is_row_vector(x)
     rows, cols = x.shape
-    columns = [[x[0, j]] * n for j in range(cols)]
+    columns = [[x[0, j]] * m for j in range(cols)]
     return Matrix(columns).T
 
 
 def columns_sum(X: Matrix) -> Matrix:
+    """Sum over columns (returns row vector)."""
     m, n = X.shape
     columns = [sum(X.col(j)) for j in range(n)]
     return Matrix(columns).T
 
 
 def rows_sum(X: Matrix) -> Matrix:
+    """Sum over rows (returns column vector)."""
     m, n = X.shape
     rows = [sum(X.row(i)) for i in range(m)]
     return Matrix(rows)
@@ -150,34 +166,42 @@ def rows_mean(X: Matrix) -> Matrix:
 
 
 def apply(f, X: Matrix) -> Matrix:
+    """Element-wise application of function f to X."""
     return X.applyfunc(f)
 
 
 def exp(X: Matrix) -> Matrix:
+    """Element-wise exponential exp(X)."""
     return X.applyfunc(sp.exp)
 
 
 def log(X: Matrix) -> Matrix:
+    """Element-wise natural logarithm log(X)."""
     return X.applyfunc(sp.log)
 
 
 def reciprocal(X: Matrix) -> Matrix:
+    """Element-wise reciprocal 1/X."""
     return X.applyfunc(lambda x: 1 / x)
 
 
 def square(X: Matrix) -> Matrix:
+    """Element-wise square X²."""
     return X.applyfunc(lambda x: x * x)
 
 
 def sqrt(X: Matrix) -> Matrix:
+    """Element-wise square root √X."""
     return X.applyfunc(sp.sqrt)
 
 
 def inv_sqrt(X: Matrix) -> Matrix:
+    """Element-wise inverse square root X^(-1/2)."""
     return reciprocal(sqrt(X))
 
 
 def log_sigmoid(X: Matrix) -> Matrix:
+    """Element-wise log(sigmoid(X))."""
     return log(Sigmoid(X))
 
 

@@ -128,6 +128,7 @@ def Srelu_gradient(al, tl, ar, tr):
 
 
 class ActivationFunction(object):
+    """Interface for activation functions with value and gradient methods."""
     def __call__(self, X: Matrix) -> Matrix:
         raise NotImplementedError
 
@@ -136,11 +137,18 @@ class ActivationFunction(object):
 
 
 class ReLUActivation(ActivationFunction):
+    """ReLU activation function: max(0, x)."""
     def __call__(self, X: Matrix) -> Matrix:
         return Relu(X)
 
     def gradient(self, X: Matrix) -> Matrix:
+        """Compute gradient of ReLU."""
         return Relu_gradient(X)
+
+    def __repr__(self) -> str:
+        return "ReLU"
+
+    __str__ = __repr__
 
 
 class LeakyReLUActivation(ActivationFunction):
@@ -148,40 +156,70 @@ class LeakyReLUActivation(ActivationFunction):
         self.alpha = alpha
 
     def __call__(self, X: Matrix) -> Matrix:
+        """Apply leaky ReLU activation."""
         return Leaky_relu(self.alpha)(X)
 
     def gradient(self, X: Matrix) -> Matrix:
+        """Compute gradient of leaky ReLU."""
         return Leaky_relu_gradient(self.alpha)(X)
+
+    def __repr__(self) -> str:
+        return f"LeakyReLU(alpha={float(self.alpha)})"
+
+    __str__ = __repr__
 
 
 class AllReLUActivation(ActivationFunction):
+    """AllReLU activation (alternative parameterization of leaky ReLU)."""
     def __init__(self, alpha):
         self.alpha = alpha
 
     def __call__(self, X: Matrix) -> Matrix:
+        """Apply AllReLU activation."""
         return All_relu(self.alpha)(X)
 
     def gradient(self, X: Matrix) -> Matrix:
+        """Compute gradient of AllReLU."""
         return All_relu_gradient(self.alpha)(X)
+
+    def __repr__(self) -> str:
+        return f"AllReLU(alpha={float(self.alpha)})"
+
+    __str__ = __repr__
 
 
 class HyperbolicTangentActivation(ActivationFunction):
+    """Hyperbolic tangent activation function."""
     def __call__(self, X: Matrix) -> Matrix:
         return Hyperbolic_tangent(X)
 
     def gradient(self, X: Matrix) -> Matrix:
+        """Compute gradient of hyperbolic tangent."""
         return Hyperbolic_tangent_gradient(X)
+
+    def __repr__(self) -> str:
+        return "HyperbolicTangent"
+
+    __str__ = __repr__
 
 
 class SigmoidActivation(ActivationFunction):
+    """Sigmoid activation function: 1 / (1 + exp(-x))."""
     def __call__(self, X: Matrix) -> Matrix:
         return Sigmoid(X)
 
     def gradient(self, X: Matrix) -> Matrix:
+        """Compute gradient of sigmoid."""
         return Sigmoid_gradient(X)
+
+    def __repr__(self) -> str:
+        return "Sigmoid"
+
+    __str__ = __repr__
 
 
 class SReLUActivation(ActivationFunction):
+    """Smooth rectified linear activation with learnable parameters."""
     def __init__(self, al=0, tl=0, ar=0, tr=1):
         self.al = al
         self.tl = tl
@@ -189,13 +227,27 @@ class SReLUActivation(ActivationFunction):
         self.tr = tr
 
     def __call__(self, X: Matrix) -> Matrix:
+        """Apply SReLU activation with current parameters."""
         return Srelu(self.al, self.tl, self.ar, self.tr)(X)
 
     def gradient(self, X: Matrix) -> Matrix:
+        """Compute gradient of SReLU with current parameters."""
         return Srelu_gradient(self.al, self.tl, self.ar, self.tr)(X)
+
+    def __repr__(self) -> str:
+        al, tl, ar, tr = [float(v) for v in self.x]
+        return f"SReLU(al={al}, tl={tl}, ar={ar}, tr={tr})"
+
+    __str__ = __repr__
 
 
 def parse_activation(text: str) -> ActivationFunction:
+    """Parse a textual activation specification into an ActivationFunction.
+
+    Examples include "ReLU", "Sigmoid", "HyperbolicTangent",
+    "AllReLU(alpha=0.1)", "LeakyReLU(alpha=0.1)", and
+    "SReLU(al=0, tl=0, ar=0, tr=1)".
+    """
     try:
         func = parse_function_call(text)
         if func.name == 'ReLU':
