@@ -113,7 +113,7 @@ def run_case(manifest_dir: Path, meta: Dict[str, Any]):
     if meta["type"] == "Activation":
         D = meta["D"]; K = meta["K"]
         act = parse_activation(meta["activation_spec"])
-        layer = SReLULayer(D, K, act) if isinstance(act, SReLUActivation) else ActivationLayer(D, K, act)
+        layer = ActivationLayer(D, K, act)
         layer.W = np_to_sp_matrix(tensors["W"])  # (K, D)
         layer.b = np_to_sp_matrix(tensors["b"], force_row=True)
         Y = layer.feedforward(X)
@@ -123,16 +123,35 @@ def run_case(manifest_dir: Path, meta: Dict[str, Any]):
         assert_close("DX", layer.DX, tensors["DX"])  # (N, D)
         assert_close("DW", layer.DW, tensors["DW"])  # (K, D)
         assert_close("Db", layer.Db, tensors["Db"])  # (1, K)
-        if isinstance(act, SReLUActivation) and "act_Dx" in tensors:
-            assert_close("act.Dx", act.Dx, tensors["act_Dx"])
         # optimize verification
         if "optimizer_spec" in meta:
             layer.set_optimizer(meta["optimizer_spec"])
             layer.optimize(meta.get("lr", 0.1))
             assert_close("W_opt", layer.W, tensors.get("W_opt", tensors["W"]))
             assert_close("b_opt", layer.b, tensors.get("b_opt", tensors["b"]))
-            if isinstance(act, SReLUActivation) and "act_x_opt" in tensors:
-                assert_close("act_x_opt", layer.act.x, tensors["act_x_opt"])  # (1, 4)
+        return
+
+    if meta["type"] == "SReLU":
+        D = meta["D"]; K = meta["K"]
+        act = parse_activation(meta["activation_spec"])
+        layer = SReLULayer(D, K, act)
+        layer.W = np_to_sp_matrix(tensors["W"])  # (K, D)
+        layer.b = np_to_sp_matrix(tensors["b"], force_row=True)
+        Y = layer.feedforward(X)
+        assert_close("Y", Y, tensors["Y"])
+        DY = np_to_sp_matrix(tensors["DY"])  # (N, K)
+        layer.backpropagate(Y, DY)
+        assert_close("DX", layer.DX, tensors["DX"])  # (N, D)
+        assert_close("DW", layer.DW, tensors["DW"])  # (K, D)
+        assert_close("Db", layer.Db, tensors["Db"])  # (1, K)
+        assert_close("act.Dx", act.Dx, tensors["act_Dx"])
+        # optimize verification
+        if "optimizer_spec" in meta:
+            layer.set_optimizer(meta["optimizer_spec"])
+            layer.optimize(meta.get("lr", 0.1))
+            assert_close("W_opt", layer.W, tensors.get("W_opt", tensors["W"]))
+            assert_close("b_opt", layer.b, tensors.get("b_opt", tensors["b"]))
+            assert_close("act_x_opt", layer.act.x, tensors["act_x_opt"])
         return
 
     if meta["type"] == "Softmax":

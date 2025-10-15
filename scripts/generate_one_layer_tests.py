@@ -94,12 +94,10 @@ def _mk_linear_case(name: str, N: int, D: int, K: int, rng: torch.Generator, opt
 
 
 def _mk_activation_case(name: str, N: int, D: int, K: int, act, rng: torch.Generator, optimizer_spec: str, lr: float):
-    layer = SReLULayer(D, K, act) if isinstance(act, SReLUActivation) else ActivationLayer(D, K, act)
-    layer.set_optimizer(optimizer_spec)
+    layer = ActivationLayer(D, K, act)
     X = torch.randn(N, D, generator=rng) * 0.5 + 0.1
     layer.W[:] = torch.randn(K, D, generator=rng) * 0.3
     layer.b[:] = torch.randn(K, generator=rng) * 0.1
-
     Y = layer.feedforward(X)
     DY = torch.randn(Y.shape, generator=rng, dtype=Y.dtype) * 0.2
     layer.backpropagate(Y, DY)
@@ -122,17 +120,52 @@ def _mk_activation_case(name: str, N: int, D: int, K: int, act, rng: torch.Gener
         "DW": layer.DW.clone(),
         "Db": layer.Db.clone(),
     }
-    # SReLU has trainable activation params stored in act.x and act.Dx
-    if isinstance(act, SReLUActivation):
-        case["act_x"] = act.x.clone()
-        case["act_Dx"] = act.Dx.clone()
 
     # optimize
+    layer.set_optimizer(optimizer_spec)
     layer.optimize(lr)
     case["W_opt"] = layer.W.clone()
     case["b_opt"] = layer.b.clone()
-    if isinstance(act, SReLUActivation):
-        case["act_x_opt"] = act.x.clone()
+    return case
+
+
+def _mk_srelu_case(name: str, N: int, D: int, K: int, act, rng: torch.Generator, optimizer_spec: str, lr: float):
+    layer = SReLULayer(D, K, act)
+    X = torch.randn(N, D, generator=rng) * 0.5 + 0.1
+    layer.W[:] = torch.randn(K, D, generator=rng) * 0.3
+    layer.b[:] = torch.randn(K, generator=rng) * 0.1
+
+    Y = layer.feedforward(X)
+    DY = torch.randn(Y.shape, generator=rng, dtype=Y.dtype) * 0.2
+    layer.backpropagate(Y, DY)
+
+    case = {
+        "name": name,
+        "type": "SReLU",
+        "optimizer_spec": optimizer_spec,
+        "lr": lr,
+        "activation_spec": str(act),
+        "N": N,
+        "D": D,
+        "K": K,
+        "X": X,
+        "Y": Y,
+        "DY": DY,
+        "DX": layer.DX,
+        "W": layer.W.clone(),
+        "b": layer.b.clone(),
+        "DW": layer.DW.clone(),
+        "Db": layer.Db.clone(),
+        "act_x": act.x.clone(),
+        "act_Dx": act.Dx.clone()
+    }
+
+    # optimize
+    layer.set_optimizer(optimizer_spec)
+    layer.optimize(lr)
+    case["W_opt"] = layer.W.clone()
+    case["b_opt"] = layer.b.clone()
+    case["act_x_opt"] = act.x.clone()
 
     return case
 
@@ -234,7 +267,9 @@ def _materialize_case(dirpath: Path, index: List[Dict[str, Any]], i: int, case: 
 
 
 def main():
+    # We set the constant for numerical stability to 0, in order to be consistent with nerva-sympy
     import nerva_torch
+    nerva_torch.matrix_operations.epsilon = 0
 
     parser = argparse.ArgumentParser()
     # Default output directory inside the repository under tests/one_layer_cases
@@ -252,9 +287,6 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     rng = torch.Generator().manual_seed(args.seed)
-
-    # We set the constant for numerical stability to 0, in order to be consistent with nerva-sympy
-    nerva_torch.matrix_operations.epsilon = 0
 
     Ns = [int(x) for x in str(args.Ns).split(',') if x]
     Ds = [int(x) for x in str(args.Ds).split(',') if x]
@@ -295,6 +327,14 @@ def main():
                     for opt in optimizers:
                         case = _mk_activation_case(f"Activation_{tag}_D{D}_K{K}_{opt}", N=N, D=D, K=K, act=act, rng=rng, optimizer_spec=opt, lr=args.lr)
                         _materialize_case(out_dir, index, i, case); i += 1
+
+    # SReLULayer cases for all combinations
+    for N in Ns:
+        for D in Ds:
+            for K in Ks:
+                for opt in optimizers:
+                    case = _mk_srelu_case(f"SReLU_{tag}_D{D}_K{K}_{opt}", N=N, D=D, K=K, act=act, rng=rng, optimizer_spec=opt, lr=args.lr)
+                    _materialize_case(out_dir, index, i, case); i += 1
 
     # Softmax and LogSoftmax for all combinations
     for N in Ns:

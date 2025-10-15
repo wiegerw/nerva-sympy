@@ -137,20 +137,19 @@ class SReLULayer(ActivationLayer):
     def backpropagate(self, Y: Matrix, DY: Matrix) -> None:
         super().backpropagate(Y, DY)
         Z = self.Z
-        al = self.act.al
-        tl = self.act.tl
-        ar = self.act.ar
-        tr = self.act.tr
+        al, tl, ar, tr = self.act.x
 
         Al = lambda Z: Z.applyfunc(lambda Zij: Piecewise((Zij - tl, Zij <= tl), (0, True)))
         Tl = lambda Z: Z.applyfunc(lambda Zij: Piecewise((1 - al, Zij <= tl), (0, True)))
         Ar = lambda Z: Z.applyfunc(lambda Zij: Piecewise((0, Zij <= tl), (0, Zij < tr), (Zij - tr, True)))
         Tr = lambda Z: Z.applyfunc(lambda Zij: Piecewise((0, Zij <= tl), (0, Zij < tr), (1 - ar, True)))
 
-        self.Dal = elements_sum(hadamard(DY, Al(Z)))
-        self.Dtl = elements_sum(hadamard(DY, Tl(Z)))
-        self.Dar = elements_sum(hadamard(DY, Ar(Z)))
-        self.Dtr = elements_sum(hadamard(DY, Tr(Z)))
+        Dal = elements_sum(hadamard(DY, Al(Z)))
+        Dtl = elements_sum(hadamard(DY, Tl(Z)))
+        Dar = elements_sum(hadamard(DY, Ar(Z)))
+        Dtr = elements_sum(hadamard(DY, Tr(Z)))
+
+        self.act.Dx[:, :] = Matrix([Dal, Dtl, Dar, Dtr])
 
     def set_optimizer(self, optimizer: str):
         make_optimizer = parse_optimizer(optimizer)
