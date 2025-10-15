@@ -18,29 +18,6 @@ def run_sgd_step(M, loss, X, T, lr):
     return Y, DY
 
 
-def compute_loss(M, data_loader, loss):
-    """Compute mean loss for a model over a data loader using the given loss."""
-    N = len(data_loader.dataset)  # N is the number of examples
-    total_loss = 0.0
-    for X, T in data_loader:
-        Y = M.feedforward(X)
-        total_loss += loss(Y, T)
-    return total_loss / N
-
-
-def compute_accuracy(M, data_loader):
-    import tensorflow as tf
-    """Compute mean classification accuracy for a model over a data loader."""
-    N = len(data_loader.dataset)  # N is the number of examples
-    total_correct = 0
-    for X, T in data_loader:
-        Y = M.feedforward(X)
-        predicted = tf.argmax(Y, axis=1)  # the predicted classes for the batch
-        targets = tf.argmax(T, axis=1)    # the expected classes
-        total_correct += tf.reduce_sum(tf.cast(tf.equal(predicted, targets), dtype=tf.int32))
-    return total_correct / N
-
-
 def tensors_to_numpy(t):
     if hasattr(t, "numpy"):
         return t.numpy()
