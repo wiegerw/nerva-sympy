@@ -206,7 +206,21 @@ def _mk_softmax_case(name: str, N: int, D: int, K: int, rng: torch.Generator, ki
 
 def _mk_batchnorm_case(name: str, N: int, D: int, rng: torch.Generator, optimizer_spec: str, lr: float):
     layer = BatchNormalizationLayer(D)
-    X = torch.randn(N, D, generator=rng) * 0.5 + 0.1
+    # Use a larger input scale and reject batches with too-small per-feature variances (Sigma).
+    # If Sigma is very small, inv_sqrt(Sigma) becomes large, amplifying float32 rounding in DX.
+    # Keeping Sigma around O(1) reduces absolute rounding errors and improves test stability,
+    # especially for small batch sizes like N=2.
+    std = 1.5
+    min_var = 1e-2  # target minimal per-feature variance
+    max_tries = 8
+    for _ in range(max_tries):
+        X = torch.randn(N, D, generator=rng) * std
+        # Compute per-feature variance Sigma = diag(R^T R)/N
+        R = X - X.mean(dim=0, keepdim=True).repeat(N, 1)
+        Sigma = torch.diag(R.T @ R).unsqueeze(0) / N
+        if torch.min(Sigma) >= min_var:
+            break
+        # If variance is too small, try again (deterministic given rng)
     # Set non-trivial gamma and beta
     layer.gamma[:] = torch.randn(D, generator=rng) * 0.4 + 1.0
     layer.beta[:] = torch.randn(D, generator=rng) * 0.2
