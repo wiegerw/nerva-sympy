@@ -5,7 +5,7 @@
 
 from unittest import TestCase
 
-from nerva_sympy.activation_functions import sigmoid
+from nerva_sympy.activation_functions import sigmoid, Sigmoid
 
 from nerva_sympy.loss_functions import cross_entropy_loss, softmax_cross_entropy_loss, logistic_cross_entropy_loss, \
     squared_error_loss, Squared_error_loss, Cross_entropy_loss, Softmax_cross_entropy_loss, Logistic_cross_entropy_loss, \

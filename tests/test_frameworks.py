@@ -7,7 +7,7 @@
 import os
 import unittest
 import numpy as np
-from mlp_constructors import construct_models, construct_mlp_tensorflow
+from mlp_constructors import construct_models
 
 
 def run_sgd_step(M, loss, X, T, lr):
