@@ -4,24 +4,15 @@
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE or http://www.boost.org/LICENSE_1_0.txt)
 
-import os
-
 # Force CPU-only execution for deterministic cross-framework comparisons
-# Must be set before importing any frameworks
-os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
+# Must be called before importing any frameworks
+from gpu_control import disable_gpu
 
+disable_gpu()
+
+import os
 import unittest
 import numpy as np
-
-# Additionally, try to disable TensorFlow GPUs via its runtime API
-try:
-    import tensorflow as tf  # noqa: E402
-    try:
-        tf.config.set_visible_devices([], "GPU")
-    except Exception:
-        pass
-except Exception:
-    pass
 
 from mlp_constructors import construct_models
 
