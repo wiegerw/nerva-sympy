@@ -13,6 +13,16 @@ from sympy import Matrix
 import tensorflow as tf
 import torch
 
+def disable_gpu():
+    """Force CPU-only execution across common frameworks."""
+    # Must be called before importing any frameworks
+    import nerva_jax.utilities
+    import nerva_tensorflow.utilities
+    import nerva_torch.utilities
+    nerva_jax.utilities.disable_gpu()
+    nerva_tensorflow.utilities.disable_gpu()
+    nerva_torch.utilities.disable_gpu()
+
 
 def to_float(x):
     if hasattr(x, 'item'):

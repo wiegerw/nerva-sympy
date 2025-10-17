@@ -4,11 +4,9 @@
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE or http://www.boost.org/LICENSE_1_0.txt)
 
-# Force CPU-only execution for deterministic cross-framework comparisons
 # Must be called before importing any frameworks
-from gpu_control import disable_gpu
-
-disable_gpu()
+import utilities
+utilities.disable_gpu()
 
 import os
 import unittest
