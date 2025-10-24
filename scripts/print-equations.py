@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
+# Copyright 2025 Wieger Wesselink.
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE or http://www.boost.org/LICENSE_1_0.txt)
+
 import os
 import sys
 import json
 import re
 from typing import Dict, List
-
-from _equation_test_utils import norm_expr_tests
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(SCRIPT_DIR)
