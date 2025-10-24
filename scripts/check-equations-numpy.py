@@ -7,7 +7,7 @@
 import os
 import argparse
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from _equation_test_utils import (
     extract_all_test_sections,

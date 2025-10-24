@@ -31,7 +31,6 @@ class TestSReLULayers(TestCase):
         act = SReLUActivation(al, tl, ar, tr)
 
         # helper functions
-        Zij = sp.symbols('Zij')
         Al = lambda Z: Z.applyfunc(lambda Zij: Piecewise((Zij - tl, Zij <= tl), (0, True)))
         Ar = lambda Z: Z.applyfunc(lambda Zij: Piecewise((0, Zij <= tl), (0, Zij < tr), (Zij - tr, True)))
         Tl = lambda Z: Z.applyfunc(lambda Zij: Piecewise((1 - al, Zij <= tl), (0, True)))

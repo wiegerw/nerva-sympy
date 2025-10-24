@@ -13,8 +13,7 @@ from _equation_test_utils import (
     extract_all_test_sections,
     extract_layer_equations_generic,
     setup_logging,
-    block_distance,
-    print_block_equations,
+    block_distance
 )
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
