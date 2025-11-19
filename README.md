@@ -17,7 +17,7 @@ The `nerva` libraries aim to make neural networks mathematically precise and tra
 While the implementation backends focus on execution, **`nerva-sympy` ensures correctness**:
 
 - Provides **symbolic derivatives** of activation functions, layers, and loss functions.
-- Validates **hand-written backpropagation equations** used in the other Nerva packages.
+- Validates **handwritten backpropagation equations** used in the other Nerva packages.
 - Detects implementation errors early by comparing intermediate symbolic and numeric results.
 - Avoids numerical gradient checking (finite differences) in favor of exact symbolic differentiation.
 
@@ -36,6 +36,8 @@ Each backend has a dedicated PyPI package and GitHub repository:
 | `nerva-sympy`       | SymPy       | [nerva-sympy](https://pypi.org/project/nerva-sympy/)       | [repo](https://github.com/wiegerw/nerva-sympy)          |
 
 > 📝 `nerva-sympy` depends on the other four packages, since it validates their implementations.
+
+See the [nerva meta-repo](https://github.com/wiegerw/nerva) for an overview of all Python and C++ variants.
 
 ---
 
@@ -163,9 +165,17 @@ Unlike frameworks that rely on autograd or approximate numerical checks:
 
 ---
 
-## 📚 Documentation
+## 📚 Relevant Papers
 
-- [Mathematical Specifications (PDF)](https://wiegerw.github.io/nerva-rowwise/pdf/nerva-library-specifications.pdf) — shared across all backends
+1. **Nerva: a Truly Sparse Implementation of Neural Networks**
+
+   [arXiv:2407.17437](https://arxiv.org/abs/2407.17437)
+   Introduces the library and reports sparse training experiments.
+
+2. **Batch Matrix-form Equations and Implementation of Multilayer Perceptrons**
+
+   [arXiv:2511.11918](https://arxiv.org/abs/2511.11918)
+   Includes mathematical specifications and derivations.
 
 ---
 
