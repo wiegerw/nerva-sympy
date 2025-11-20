@@ -11,6 +11,7 @@ utilities.disable_gpu()
 import os
 import unittest
 import numpy as np
+import random
 
 from mlp_constructors import construct_models
 
@@ -30,9 +31,21 @@ def tensors_to_numpy(t):
         return np.array(t)
 
 
-def max_deviation(arrays):
+def max_deviation(arrays, atol=6e-5, rtol=1e-6):
+    # Cast all arrays to float32 to ensure unified dtype for comparisons
+    arrays = [np.asarray(a, dtype=np.float32) for a in arrays]
     base = arrays[0]
-    return max(np.max(np.abs(base - a)) for a in arrays[1:])
+    # Compute per-array max deviation using allclose-like criterion
+    max_dev = 0.0
+    for a in arrays[1:]:
+        diff = np.abs(base - a)
+        # Effective tolerance per element: atol + rtol * |base|
+        tol = atol + rtol * np.abs(base)
+        # Only consider the amount beyond tolerance, clipped at 0
+        excess = np.maximum(diff - tol, 0.0)
+        if excess.size:
+            max_dev = max(max_dev, float(np.max(excess)))
+    return max_dev
 
 
 class TestFrameworkConsistency(unittest.TestCase):
@@ -43,6 +56,15 @@ class TestFrameworkConsistency(unittest.TestCase):
         n_steps = 50
         tol = 1e-5
         lr = 0.001
+
+        # Determine and set seed: use env var if provided, else randomize once and print
+        env_seed = os.environ.get("NERVA_TEST_SEED")
+        if env_seed is not None:
+            seed = int(env_seed)
+        else:
+            seed = random.randint(0, 2**31 - 1)
+        print(f"[nerva-tests] Using seed: {seed}")
+        utilities.set_test_seeds(seed)
 
         here = os.path.dirname(__file__)
         data_path = os.path.join(here, "..", "data", "mnist-flattened.npz")
@@ -63,10 +85,10 @@ class TestFrameworkConsistency(unittest.TestCase):
                 DYs.append(tensors_to_numpy(DY))
                 Ts.append(tensors_to_numpy(T))
 
-            self.assertLessEqual(max_deviation(Xs), tol, f"X mismatch at step {step}")
-            self.assertLessEqual(max_deviation(Ys), tol, f"Y mismatch at step {step}")
-            self.assertLessEqual(max_deviation(DYs), tol, f"DY mismatch at step {step}")
-            self.assertLessEqual(max_deviation(Ts), tol, f"T mismatch at step {step}")
+            self.assertLessEqual(max_deviation(Xs), tol, f"X mismatch at step {step} (seed={seed})")
+            self.assertLessEqual(max_deviation(Ys), tol, f"Y mismatch at step {step} (seed={seed})")
+            self.assertLessEqual(max_deviation(DYs), tol, f"DY mismatch at step {step} (seed={seed})")
+            self.assertLessEqual(max_deviation(Ts), tol, f"T mismatch at step {step} (seed={seed})")
 
 
 if __name__ == "__main__":

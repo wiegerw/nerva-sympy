@@ -5,6 +5,7 @@
 import os
 from typing import List, Tuple, Union
 from unittest import TestCase
+import random
 
 import jax.numpy as jnp
 import numpy as np
@@ -36,6 +37,27 @@ def to_float(x):
 
 
 VERBOSE = os.environ.get('NERVA_TEST_VERBOSE', '0') in ('1', 'true', 'True')
+
+
+def set_test_seeds(seed: int):
+    """Seed Python, NumPy, TensorFlow, and PyTorch RNGs.
+
+    JAX is not seeded here because the test constructors use NumPy for init and
+    JAX ops are deterministic given the inputs and parameters. If JAX random
+    functions are introduced, seed them explicitly in the constructor.
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    try:
+        import torch
+        torch.manual_seed(seed)
+    except Exception:
+        pass
+    try:
+        import tensorflow as tf
+        tf.random.set_seed(seed)
+    except Exception:
+        pass
 
 
 def check_arrays_equal(testcase: TestCase, operation, values):

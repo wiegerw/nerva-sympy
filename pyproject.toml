@@ -4,3 +4,37 @@ requires = [
     "wheel"
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "nerva-sympy"
+version = "1.0.0"
+description = "Validation of neural network equations in SymPy."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "Wieger Wesselink", email = "j.w.wesselink@tue.nl" }
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Boost Software License 1.0 (BSL-1.0)",
+  "Operating System :: OS Independent",
+]
+dependencies = [
+  "numpy >= 1.21",
+  "sympy >= 1.9",
+  "scikit-learn >= 1.1",
+  "nerva-jax >= 1.0.0",
+  "nerva-numpy >= 1.0.0",
+  "nerva-tensorflow >= 1.0.0",
+  "nerva-torch >= 1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/wiegerw/nerva-sympy"
+"Bug Tracker" = "https://github.com/wiegerw/nerva-sympy/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

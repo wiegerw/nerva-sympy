@@ -46,7 +46,7 @@ def construct_mlp_jax(datapath: str):
     def weights_lecun(W: Matrix) -> Matrix:
         K, D = W.shape
         stddev = jnp.sqrt(1.0 / D)
-        return np.random.randn(K, D) * stddev
+        return jnp.asarray(np.random.randn(K, D) * stddev, dtype=jnp.float32)
 
     # ------------------------
     # Custom loss function
@@ -128,7 +128,7 @@ def construct_mlp_numpy(datapath: str):
     def set_weights_lecun(W: Matrix):
         K, D = W.shape
         stddev = np.sqrt(1.0 / D)
-        W[:] = np.random.randn(K, D) * stddev
+        W[:] = (np.random.randn(K, D) * stddev).astype(np.float32)
 
     # ------------------------
     # Custom loss function

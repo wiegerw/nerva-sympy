@@ -152,6 +152,10 @@ Available tests:
   `test_matrix_operations.py`, `test_one_hot.py`, `test_derivatives.py`, `test_lemmas.py`  
   Validates core symbolic building blocks.
 
+Note on the cross-framework consistency test (tests/test_frameworks.py):
+- The test compares intermediates (X, Y, DY, T) across JAX, NumPy, TensorFlow and PyTorch while performing multiple SGD steps.
+- Currently, the test uses the AbsoluteError loss, which is not differentiable at 0. This sometimes causes the test to fail, even when all implementations are correct.
+
 ---
 
 ## 🔢 Implementation Philosophy
