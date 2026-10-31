@@ -1,7 +1,2 @@
 numpy
 sympy
-scikit-learn
-nerva-jax
-nerva-numpy
-nerva-tensorflow
-nerva-torch

@@ -22,12 +22,22 @@ classifiers = [
 dependencies = [
   "numpy >= 1.21",
   "sympy >= 1.9",
-  "scikit-learn >= 1.1",
+]
+
+# The symbolic validation only needs numpy and sympy. The numerical backends are only needed
+# to compare their implementations with the symbolic reference, so they are optional.
+[project.optional-dependencies]
+jax = ["nerva-jax >= 1.0.0"]
+numpy = ["nerva-numpy >= 1.0.0"]
+tensorflow = ["nerva-tensorflow >= 1.0.0"]
+torch = ["nerva-torch >= 1.0.0"]
+all = [
   "nerva-jax >= 1.0.0",
   "nerva-numpy >= 1.0.0",
   "nerva-tensorflow >= 1.0.0",
   "nerva-torch >= 1.0.0",
 ]
+test = ["pytest"]
 
 [project.urls]
 Homepage = "https://github.com/wiegerw/nerva-sympy"
