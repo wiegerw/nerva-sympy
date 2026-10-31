@@ -14,7 +14,7 @@ def construct_mlp_jax(datapath: str):
     from nerva_jax.datasets import create_npz_dataloaders
     from nerva_jax.layers import ActivationLayer, LinearLayer
     from nerva_jax.loss_functions import LossFunction
-    from nerva_jax.matrix_operations import elements_sum, Matrix
+    from nerva_jax.matrix_operations import elements_sum, hadamard, inv_sqrt, sqrt, square, Matrix
     from nerva_jax.multilayer_perceptron import MultilayerPerceptron
     from nerva_jax.optimizers import MomentumOptimizer, NesterovOptimizer, CompositeOptimizer
     from nerva_jax.weight_initializers import bias_zero, weights_xavier_normal
@@ -49,15 +49,27 @@ def construct_mlp_jax(datapath: str):
         return jnp.asarray(np.random.randn(K, D) * stddev, dtype=jnp.float32)
 
     # ------------------------
-    # Custom loss function
+    # Custom loss function (smooth, so that the frameworks can be compared reliably)
     # ------------------------
 
-    class AbsoluteErrorLossFunction(LossFunction):
+    class PseudoHuberLossFunction(LossFunction):
+        """Pseudo-Huber loss: elements_sum(delta^2 * (sqrt(1 + (Y - T)^2 / delta^2) - 1)).
+
+        A smooth alternative to the absolute error loss. It behaves like (Y - T)^2 / 2 for
+        small errors and like delta * |Y - T| for large errors. Unlike the absolute error,
+        its gradient is continuous, so tiny floating point differences between frameworks
+        cannot flip the sign of the gradient.
+        """
+        def __init__(self, delta: float = 0.1):
+            self.delta = delta
+
         def __call__(self, Y: Matrix, T: Matrix) -> float:
-            return elements_sum(abs(Y - T))
+            E = Y - T
+            return elements_sum(self.delta ** 2 * (sqrt(1 + square(E) / self.delta ** 2) - 1))
 
         def gradient(self, Y: Matrix, T: Matrix) -> Matrix:
-            return jnp.sign(Y - T)
+            E = Y - T
+            return hadamard(E, inv_sqrt(1 + square(E) / self.delta ** 2))
 
     def create_model():
         M = MultilayerPerceptron()
@@ -86,7 +98,7 @@ def construct_mlp_jax(datapath: str):
 
     M = create_model()
     train_loader, test_loader = create_npz_dataloaders(datapath, batch_size=100)
-    loss: LossFunction = AbsoluteErrorLossFunction()
+    loss: LossFunction = PseudoHuberLossFunction()
     return M, loss, train_loader
 
 
@@ -96,7 +108,7 @@ def construct_mlp_numpy(datapath: str):
     from nerva_numpy.datasets import create_npz_dataloaders
     from nerva_numpy.layers import ActivationLayer, LinearLayer
     from nerva_numpy.loss_functions import LossFunction
-    from nerva_numpy.matrix_operations import elements_sum, Matrix
+    from nerva_numpy.matrix_operations import elements_sum, hadamard, inv_sqrt, sqrt, square, Matrix
     from nerva_numpy.multilayer_perceptron import MultilayerPerceptron
     from nerva_numpy.optimizers import MomentumOptimizer, NesterovOptimizer, CompositeOptimizer
     from nerva_numpy.weight_initializers import set_bias_zero, set_weights_xavier_normal
@@ -131,15 +143,27 @@ def construct_mlp_numpy(datapath: str):
         W[:] = (np.random.randn(K, D) * stddev).astype(np.float32)
 
     # ------------------------
-    # Custom loss function
+    # Custom loss function (smooth, so that the frameworks can be compared reliably)
     # ------------------------
 
-    class AbsoluteErrorLossFunction(LossFunction):
+    class PseudoHuberLossFunction(LossFunction):
+        """Pseudo-Huber loss: elements_sum(delta^2 * (sqrt(1 + (Y - T)^2 / delta^2) - 1)).
+
+        A smooth alternative to the absolute error loss. It behaves like (Y - T)^2 / 2 for
+        small errors and like delta * |Y - T| for large errors. Unlike the absolute error,
+        its gradient is continuous, so tiny floating point differences between frameworks
+        cannot flip the sign of the gradient.
+        """
+        def __init__(self, delta: float = 0.1):
+            self.delta = delta
+
         def __call__(self, Y: Matrix, T: Matrix) -> float:
-            return elements_sum(abs(Y - T))
+            E = Y - T
+            return elements_sum(self.delta ** 2 * (sqrt(1 + square(E) / self.delta ** 2) - 1))
 
         def gradient(self, Y: Matrix, T: Matrix) -> Matrix:
-            return np.sign(Y - T)
+            E = Y - T
+            return hadamard(E, inv_sqrt(1 + square(E) / self.delta ** 2))
 
     def create_model():
         M = MultilayerPerceptron()
@@ -168,7 +192,7 @@ def construct_mlp_numpy(datapath: str):
 
     M = create_model()
     train_loader, test_loader = create_npz_dataloaders(datapath, batch_size=100)
-    loss: LossFunction = AbsoluteErrorLossFunction()
+    loss: LossFunction = PseudoHuberLossFunction()
     return M, loss, train_loader
 
 
@@ -178,7 +202,7 @@ def construct_mlp_tensorflow(datapath: str):
     from nerva_tensorflow.datasets import create_npz_dataloaders
     from nerva_tensorflow.layers import ActivationLayer, LinearLayer
     from nerva_tensorflow.loss_functions import LossFunction
-    from nerva_tensorflow.matrix_operations import Matrix
+    from nerva_tensorflow.matrix_operations import elements_sum, hadamard, inv_sqrt, sqrt, square, Matrix
     from nerva_tensorflow.multilayer_perceptron import MultilayerPerceptron
     from nerva_tensorflow.optimizers import MomentumOptimizer, NesterovOptimizer, CompositeOptimizer
     from nerva_tensorflow.weight_initializers import set_bias_zero, set_weights_xavier_normal
@@ -213,15 +237,27 @@ def construct_mlp_tensorflow(datapath: str):
         W.assign(tf.random.normal((K, D), stddev=stddev, dtype=W.dtype))
 
     # ------------------------
-    # Custom loss function
+    # Custom loss function (smooth, so that the frameworks can be compared reliably)
     # ------------------------
 
-    class AbsoluteErrorLossFunction(LossFunction):
+    class PseudoHuberLossFunction(LossFunction):
+        """Pseudo-Huber loss: elements_sum(delta^2 * (sqrt(1 + (Y - T)^2 / delta^2) - 1)).
+
+        A smooth alternative to the absolute error loss. It behaves like (Y - T)^2 / 2 for
+        small errors and like delta * |Y - T| for large errors. Unlike the absolute error,
+        its gradient is continuous, so tiny floating point differences between frameworks
+        cannot flip the sign of the gradient.
+        """
+        def __init__(self, delta: float = 0.1):
+            self.delta = delta
+
         def __call__(self, Y: Matrix, T: Matrix) -> float:
-            return tf.reduce_sum(tf.abs(Y - T)).numpy()
+            E = Y - T
+            return elements_sum(self.delta ** 2 * (sqrt(1 + square(E) / self.delta ** 2) - 1))
 
         def gradient(self, Y: Matrix, T: Matrix) -> Matrix:
-            return tf.sign(Y - T)
+            E = Y - T
+            return hadamard(E, inv_sqrt(1 + square(E) / self.delta ** 2))
 
     def create_model():
         M = MultilayerPerceptron()
@@ -250,7 +286,7 @@ def construct_mlp_tensorflow(datapath: str):
 
     M = create_model()
     train_loader, test_loader = create_npz_dataloaders(datapath, batch_size=100)
-    loss: LossFunction = AbsoluteErrorLossFunction()
+    loss: LossFunction = PseudoHuberLossFunction()
     return M, loss, train_loader
 
 
@@ -260,7 +296,7 @@ def construct_mlp_torch(datapath: str):
     from nerva_torch.datasets import create_npz_dataloaders
     from nerva_torch.layers import ActivationLayer, LinearLayer
     from nerva_torch.loss_functions import LossFunction
-    from nerva_torch.matrix_operations import elements_sum, Matrix
+    from nerva_torch.matrix_operations import elements_sum, hadamard, inv_sqrt, sqrt, square, Matrix
     from nerva_torch.multilayer_perceptron import MultilayerPerceptron
     from nerva_torch.optimizers import MomentumOptimizer, NesterovOptimizer, CompositeOptimizer
     from nerva_torch.weight_initializers import set_bias_zero, set_weights_xavier_normal
@@ -295,15 +331,27 @@ def construct_mlp_torch(datapath: str):
         W.data = torch.randn(K, D) * stddev
 
     # ------------------------
-    # Custom loss function
+    # Custom loss function (smooth, so that the frameworks can be compared reliably)
     # ------------------------
 
-    class AbsoluteErrorLossFunction(LossFunction):
+    class PseudoHuberLossFunction(LossFunction):
+        """Pseudo-Huber loss: elements_sum(delta^2 * (sqrt(1 + (Y - T)^2 / delta^2) - 1)).
+
+        A smooth alternative to the absolute error loss. It behaves like (Y - T)^2 / 2 for
+        small errors and like delta * |Y - T| for large errors. Unlike the absolute error,
+        its gradient is continuous, so tiny floating point differences between frameworks
+        cannot flip the sign of the gradient.
+        """
+        def __init__(self, delta: float = 0.1):
+            self.delta = delta
+
         def __call__(self, Y: Matrix, T: Matrix) -> float:
-            return elements_sum(abs(Y - T))
+            E = Y - T
+            return elements_sum(self.delta ** 2 * (sqrt(1 + square(E) / self.delta ** 2) - 1))
 
         def gradient(self, Y: Matrix, T: Matrix) -> Matrix:
-            return torch.sign(Y - T)
+            E = Y - T
+            return hadamard(E, inv_sqrt(1 + square(E) / self.delta ** 2))
 
     def create_model():
         M = MultilayerPerceptron()
@@ -332,7 +380,7 @@ def construct_mlp_torch(datapath: str):
 
     M = create_model()
     train_loader, test_loader = create_npz_dataloaders(datapath, batch_size=100)
-    loss: LossFunction = AbsoluteErrorLossFunction()
+    loss: LossFunction = PseudoHuberLossFunction()
     return M, loss, train_loader
 
 

@@ -6,12 +6,12 @@
 
 # Must be called before importing any frameworks
 import utilities
+utilities.require_backends('jax', 'numpy', 'tensorflow', 'torch')
 utilities.disable_gpu()
 
 import os
 import unittest
 import numpy as np
-import random
 
 from mlp_constructors import construct_models
 
@@ -57,17 +57,16 @@ class TestFrameworkConsistency(unittest.TestCase):
         tol = 1e-5
         lr = 0.001
 
-        # Determine and set seed: use env var if provided, else randomize once and print
-        env_seed = os.environ.get("NERVA_TEST_SEED")
-        if env_seed is not None:
-            seed = int(env_seed)
-        else:
-            seed = random.randint(0, 2**31 - 1)
+        # Use a fixed seed by default, so that failures are reproducible.
+        # Set NERVA_TEST_SEED to use a different seed.
+        seed = int(os.environ.get("NERVA_TEST_SEED", "12345"))
         print(f"[nerva-tests] Using seed: {seed}")
         utilities.set_test_seeds(seed)
 
         here = os.path.dirname(__file__)
         data_path = os.path.join(here, "..", "data", "mnist-flattened.npz")
+        if not os.path.exists(data_path):
+            self.skipTest(f"Dataset '{data_path}' not found. Create it with: cd data && python prepare_data.py --dataset=mnist --download")
         models = construct_models(synchronize_weights=True, data_path=data_path)
 
         # unpack triples
