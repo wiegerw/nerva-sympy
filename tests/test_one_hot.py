@@ -8,6 +8,10 @@ import os
 from unittest import TestCase
 
 import numpy as np
+
+from utilities import require_modules
+require_modules('torch', 'tensorflow')
+
 import torch
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'

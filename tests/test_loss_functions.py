@@ -7,6 +7,9 @@
 import random
 from unittest import TestCase
 
+from utilities import require_backends
+require_backends('jax', 'numpy', 'tensorflow', 'torch')
+
 import nerva_jax.loss_functions as jnp_
 import nerva_numpy.loss_functions as np_
 import nerva_sympy.loss_functions as sympy_

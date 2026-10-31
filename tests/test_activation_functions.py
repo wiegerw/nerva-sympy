@@ -7,6 +7,9 @@
 from unittest import TestCase
 
 import numpy as np
+from utilities import require_backends
+require_backends('jax', 'numpy', 'tensorflow', 'torch')
+
 from nerva_jax import activation_functions as jnp_
 from nerva_numpy import activation_functions as np_
 from nerva_sympy import activation_functions as sympy_

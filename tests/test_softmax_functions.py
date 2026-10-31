@@ -6,6 +6,9 @@
 
 from unittest import TestCase
 
+from utilities import require_backends
+require_backends('jax', 'numpy', 'tensorflow', 'torch')
+
 import nerva_jax.softmax_functions as jnp_
 import nerva_numpy.softmax_functions as np_
 import nerva_sympy.softmax_functions as sympy_
