@@ -215,9 +215,9 @@ def _mk_batchnorm_case(name: str, N: int, D: int, rng: torch.Generator, optimize
     max_tries = 8
     for _ in range(max_tries):
         X = torch.randn(N, D, generator=rng) * std
-        # Compute per-feature variance Sigma = diag(R^T R)/N
+        # Compute per-feature variance Sigma = columns_sum(hadamard(R, R)) / N
         R = X - X.mean(dim=0, keepdim=True).repeat(N, 1)
-        Sigma = torch.diag(R.T @ R).unsqueeze(0) / N
+        Sigma = (R * R).sum(dim=0, keepdim=True) / N
         if torch.min(Sigma) >= min_var:
             break
         # If variance is too small, try again (deterministic given rng)
