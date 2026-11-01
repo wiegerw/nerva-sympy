@@ -10,6 +10,7 @@ utilities.require_backends('jax', 'numpy', 'tensorflow', 'torch')
 utilities.disable_gpu()
 
 import os
+import tempfile
 import unittest
 import numpy as np
 
@@ -63,10 +64,15 @@ class TestFrameworkConsistency(unittest.TestCase):
         print(f"[nerva-tests] Using seed: {seed}")
         utilities.set_test_seeds(seed)
 
-        here = os.path.dirname(__file__)
-        data_path = os.path.join(here, "..", "..", "data", "mnist-flattened.npz")
-        if not os.path.exists(data_path):
-            self.skipTest(f"Dataset '{data_path}' not found. Create it with: cd data && python prepare_data.py --dataset=mnist --download")
+        # Use the synthetic shapes dataset (28x28 images, 10 classes), so that no download is needed
+        try:
+            from nerva_numpy.shapes_dataset import make_shapes_dataset
+        except ImportError:
+            self.skipTest("nerva_numpy.shapes_dataset not found; this test needs a version of nerva-numpy that provides it")
+        tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(tmpdir.cleanup)
+        data_path = os.path.join(tmpdir.name, "shapes.npz")
+        np.savez(data_path, **make_shapes_dataset(num_train=n_steps * 100, num_test=1000, seed=seed))
         models = construct_models(synchronize_weights=True, data_path=data_path)
 
         # unpack triples
