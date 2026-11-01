@@ -101,9 +101,11 @@ The test suite consists of three groups of tests, which need different packages:
 |-------|-----------------|--------------|
 | Symbolic tests (`test_derivatives.py`, `test_layer_*.py`, `test_*_derivations.py`, ...) | The matrix-form equations against symbolic differentiation | `numpy`, `sympy` |
 | Equation tests (`test_equations.py`) | The layer equations in the source code of each backend are identical to the validated SymPy equations | The source code of the backends (see below), no frameworks |
-| Cross-framework tests (`test_matrix_operations.py`, `test_activation_functions.py`, `test_loss_functions.py`, `test_softmax_functions.py`, `test_one_hot.py`, `test_frameworks.py`) | The numerical results of the backends against SymPy and against each other | All four backends: `pip install "nerva-sympy[all]"` |
+| Cross-framework tests (`tests/cross_framework`) | The numerical results of the backends against SymPy and against each other | All four backends: `pip install "nerva-sympy[all]"`. Only run on request, see below |
 
 Test modules whose requirements are not installed are skipped, so the tests can be run with any subset of the backends.
+The cross-framework tests are not run by default. To run them, install all four backends and use
+`python tests/run_all_tests.py --run --cross-framework`, or `python -m pytest tests/cross_framework`.
 
 A few symbolic tests take a long time; they are marked as `slow`. The helper script `tests/run_all_tests.py` skips
 them by default (add `--include-long` to run them), and with pytest they can be skipped with `-m "not slow"`.
@@ -120,7 +122,7 @@ generated. After changing a template, update the sibling checkouts of the backen
 `python scripts/sync_backend_tests.py`; `python scripts/sync_backend_tests.py --check` reports differences (this is
 checked in CI).
 
-`test_frameworks.py` also needs the MNIST dataset in `data/mnist-flattened.npz`:
+`cross_framework/test_frameworks.py` also needs the MNIST dataset in `data/mnist-flattened.npz`:
 
 ```bash
 cd data
@@ -130,7 +132,7 @@ python prepare_data.py --dataset=mnist --download
 To run the tests:
 
 ```bash
-pip install ".[test]"           # add extras, e.g. ".[all,test]", to include the cross-framework tests
+pip install ".[test]"
 python tests/run_all_tests.py --run
 ```
 
@@ -142,7 +144,7 @@ The helper script uses pytest if it is installed, and falls back to unittest oth
 python tests/run_all_tests.py --run -k softmax
 
 # Run a specific test file, class, or test case (pytest syntax)
-python tests/run_all_tests.py --run tests/test_softmax_functions.py::TestSoftmax::test_softmax
+python tests/run_all_tests.py --run tests/test_softmax_function_derivations.py::TestSoftmaxDerivation::test6
 ```
 
 The tests can also be run directly:
@@ -156,7 +158,7 @@ Controls for output and verbosity:
 - Set `NERVA_TEST_VERBOSE=1` to print the intermediate matrices and numbers of the tests.
 - Set `NERVA_PYTEST_FLAGS` to override the pytest flags of the helper script, e.g. `NERVA_PYTEST_FLAGS="-ra -s"`.
 - Set `NERVA_CHECK_VERBOSE=v` or `vv` for more output from the equation tests.
-- Set `NERVA_TEST_SEED` to change the random seed of `test_frameworks.py` (default: 12345).
+- Set `NERVA_TEST_SEED` to change the random seed of `cross_framework/test_frameworks.py` (default: 12345).
 
 ## 🧪 Validation Suite
 
@@ -166,26 +168,30 @@ Each test compares symbolic derivatives to the manually implemented backpropagat
 Available tests:
 
 - **Activation Functions**  
-  `test_activation_functions.py`,
-  `test_softmax_functions.py`, `test_softmax_function_derivations.py`  
-  Validates symbolic gradients for Sigmoid, ReLU, SReLU, etc.
+  `test_softmax_function_derivations.py`  
+  Validates symbolic gradients for softmax and log-softmax functions.
 
 - **Layer Derivatives**  
   `test_layer_linear.py`, `test_layer_softmax.py`, `test_layer_batch_normalization.py`, `test_layer_dropout.py`, `test_layer_srelu.py`, `test_layer_derivations.py`  
   Checks symbolic vs. manual backpropagation for individual layers.
 
 - **Loss Functions**  
-  `test_loss_functions.py`, `test_loss_function_derivations.py` Ensures correct gradient formulas for common loss functions.
+  `test_loss_function_derivations.py` Ensures correct gradient formulas for common loss functions.
 
 - **Supporting Operations**  
-  `test_matrix_operations.py`, `test_matrix_properties.py`, `test_one_hot.py`, `test_derivatives.py`  
+  `test_matrix_properties.py`, `test_derivatives.py`  
   Validates core symbolic building blocks.
+
+- **Cross-framework tests** (in `tests/cross_framework`, only run on request)  
+  `test_activation_functions.py`, `test_softmax_functions.py`, `test_loss_functions.py`, `test_matrix_operations.py`,
+  `test_one_hot.py`, `test_frameworks.py`  
+  Compare the numerical backends with SymPy and with each other.
 
 - **Implementation Equations**  
   `test_equations.py`  
   Checks that the layer equations in the source code of the backends match the validated SymPy equations.
 
-Note on the cross-framework consistency test (tests/test_frameworks.py):
+Note on the cross-framework consistency test (tests/cross_framework/test_frameworks.py):
 - The test compares intermediates (X, Y, DY, T) across JAX, NumPy, TensorFlow and PyTorch while performing multiple SGD steps.
 - It uses a custom pseudo-Huber loss function. Unlike the absolute error loss that was used before, its gradient is
   continuous, so tiny floating point differences between the frameworks cannot flip the sign of the gradient.

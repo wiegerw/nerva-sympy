@@ -50,6 +50,10 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.pytest.ini_options]
+# The cross-framework tests need all four backends; they only run when requested explicitly,
+# e.g. with pytest tests/cross_framework, or python tests/run_all_tests.py --run --cross-framework.
+# The other entries are the pytest defaults.
+norecursedirs = ["cross_framework", "*.egg", ".*", "_darcs", "build", "CVS", "dist", "node_modules", "venv", "{arch}"]
 markers = [
   "slow: tests that take a long time (run with --include-long in tests/run_all_tests.py, or pytest -m slow)",
 ]

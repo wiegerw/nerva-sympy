@@ -196,7 +196,7 @@ class TestLossFunctionDerivation(TestCase):
         self.assertTrue(f2.equals(f3))
         self.assertTrue(f3.equals(f4))
 
-    # The pseudo-Huber loss is used as a custom loss function in test_frameworks.py (see mlp_constructors.py).
+    # The pseudo-Huber loss is used as a custom loss function in cross_framework/test_frameworks.py.
     def test_pseudo_huber_loss(self):
         K = 3
         N = 2

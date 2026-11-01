@@ -64,7 +64,7 @@ class TestFrameworkConsistency(unittest.TestCase):
         utilities.set_test_seeds(seed)
 
         here = os.path.dirname(__file__)
-        data_path = os.path.join(here, "..", "data", "mnist-flattened.npz")
+        data_path = os.path.join(here, "..", "..", "data", "mnist-flattened.npz")
         if not os.path.exists(data_path):
             self.skipTest(f"Dataset '{data_path}' not found. Create it with: cd data && python prepare_data.py --dataset=mnist --download")
         models = construct_models(synchronize_weights=True, data_path=data_path)

@@ -49,6 +49,8 @@ def main():
                         help="Actually run all tests. Without this flag, the script prints help and exits.")
     parser.add_argument("--include-long", action="store_true",
                         help="Include tests marked @pytest.mark.slow")
+    parser.add_argument("--cross-framework", action="store_true",
+                        help="Also run the cross-framework tests in tests/cross_framework (requires pytest and all four backends)")
     parser.add_argument("--duration", type=int, default=None,
                         help="Show the slowest N tests (pytest only)")
     parser.add_argument("extra_args", nargs=argparse.REMAINDER,
@@ -57,7 +59,7 @@ def main():
 
     # Require explicit confirmation to avoid duplicate runs when called from a parent runner
     if not args.run:
-        print("No action taken. To run tests in this folder, invoke:\n  python run_all_tests.py --run [--include-long] [--duration N] [<extra pytest/unittest args>]")
+        print("No action taken. To run tests in this folder, invoke:\n  python run_all_tests.py --run [--include-long] [--cross-framework] [--duration N] [<extra pytest/unittest args>]")
         sys.exit(0)
 
     include_long = args.include_long
@@ -80,11 +82,21 @@ def main():
         duration_args = [f"--durations={duration_flag}"]
 
     # --- Build test command ---
+    # tests/cross_framework is excluded by norecursedirs in pyproject.toml; include it on request.
+    # (Passing it as an extra path does not work, because pytest skips paths inside an earlier path.)
+    test_dirs = [str(TEST_DIR)]
+    cross_framework_args = []
+    if args.cross_framework:
+        cross_framework_args = ["-o", "norecursedirs=*.egg .* _darcs build CVS dist node_modules venv {arch}"]
+
     try:
         import pytest
-        cmd = [sys.executable, "-m", "pytest", *PYTEST_FLAGS, *marker_args, str(TEST_DIR), *duration_args, *extra_args]
+        cmd = [sys.executable, "-m", "pytest", *PYTEST_FLAGS, *marker_args, *cross_framework_args, *test_dirs, *duration_args, *extra_args]
         print("Detected pytest. Running tests with pytest...")
     except ImportError:
+        if args.cross_framework:
+            print("The cross-framework tests require pytest: pip install pytest")
+            sys.exit(1)
         print("pytest not found. Falling back to unittest discovery...")
         cmd = [sys.executable, "-m", "unittest", "discover", "-b", "-s", str(TEST_DIR), "-p", "test_*.py", "-v", *extra_args]
 
