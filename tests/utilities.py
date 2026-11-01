@@ -36,6 +36,18 @@ def require_modules(*names: str) -> None:
         raise SkipTest(f"requires {', '.join(missing)} (install with: pip install 'nerva-sympy[all]')")
 
 
+def slow(test):
+    """Mark a test as slow. Slow tests are skipped with pytest -m "not slow".
+
+    Without pytest installed (unittest), slow tests are run as usual.
+    """
+    try:
+        import pytest
+    except ImportError:
+        return test
+    return pytest.mark.slow(test)
+
+
 def require_backends(*backends: str) -> None:
     """Skip the calling test module unless the given nerva backends and their frameworks are installed."""
     require_modules(*[name for backend in backends for name in BACKEND_MODULES[backend]])

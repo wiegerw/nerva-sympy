@@ -50,11 +50,11 @@ jobs:
         run: python -m pytest nerva-sympy/tests/test_equations.py nerva-sympy/tests/test_one_layer.py -ra
 
   # Runs the symbolic tests with only numpy and sympy installed. The cross-framework
-  # tests are skipped, because they need all four backends.
+  # tests are skipped, because they need all four backends, and so are the slow tests.
   symbolic:
     name: Symbolic tests
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -67,4 +67,4 @@ jobs:
       - name: Show versions
         run: python -m pip list
       - name: Run tests
-        run: python -m pytest tests -ra
+        run: python -m pytest tests -m "not slow" -ra

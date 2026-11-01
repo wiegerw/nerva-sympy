@@ -48,3 +48,8 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+markers = [
+  "slow: tests that take a long time (run with --include-long in tests/run_all_tests.py, or pytest -m slow)",
+]

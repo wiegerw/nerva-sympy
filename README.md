@@ -105,6 +105,9 @@ The test suite consists of three groups of tests, which need different packages:
 
 Test modules whose requirements are not installed are skipped, so the tests can be run with any subset of the backends.
 
+A few symbolic tests take a long time; they are marked as `slow`. The helper script `tests/run_all_tests.py` skips
+them by default (add `--include-long` to run them), and with pytest they can be skipped with `-m "not slow"`.
+
 The equation tests locate the source code of a backend in the following order:
 
 1. The environment variable `NERVA_<BACKEND>_LAYERS_FILE`, e.g. `NERVA_TORCH_LAYERS_FILE=/path/to/layers.py`.
