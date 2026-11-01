@@ -9,7 +9,7 @@ from unittest import TestCase
 from nerva_sympy.activation_functions import *
 from nerva_sympy.matrix_operations import *
 
-from utilities import equal_matrices, matrix
+from utilities import equal_matrices, matrix, slow
 
 
 class TestSReLULayers(TestCase):
@@ -77,6 +77,7 @@ class TestSReLULayers(TestCase):
         self.assertTrue(equal_matrices(Dar, Dar1, simplify_arguments=False))
         self.assertTrue(equal_matrices(Dtr, Dtr1, simplify_arguments=True))
 
+    @slow
     def test_srelu_layer(self):
         self._test_srelu_layer(D=3, K=2, N=2, loss = elements_sum)
         self._test_srelu_layer(D=2, K=3, N=2, loss = elements_sum)

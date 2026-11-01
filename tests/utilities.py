@@ -2,27 +2,63 @@
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE or http://www.boost.org/LICENSE_1_0.txt)
 
+import importlib.util
 import os
+import sys
 from typing import List, Tuple, Union
-from unittest import TestCase
+from unittest import SkipTest, TestCase
 import random
 
-import jax.numpy as jnp
 import numpy as np
 import sympy as sp
 from sympy import Matrix
-import tensorflow as tf
-import torch
+
+# The numerical frameworks (JAX, TensorFlow, PyTorch) are optional. They are imported lazily,
+# so that the purely symbolic tests can run with only numpy and sympy installed.
+
+# Maps a nerva backend name to the Python modules it needs.
+BACKEND_MODULES = {
+    'numpy': ['nerva_numpy', 'numpy'],
+    'jax': ['nerva_jax', 'jax'],
+    'tensorflow': ['nerva_tensorflow', 'tensorflow'],
+    'torch': ['nerva_torch', 'torch'],
+}
+
+
+def require_modules(*names: str) -> None:
+    """Skip the calling test module if any of the given modules is not installed.
+
+    Call this at module level, before importing the modules. Both pytest and
+    unittest report a module-level SkipTest as a skipped module.
+    """
+    missing = [name for name in names if importlib.util.find_spec(name) is None]
+    if missing:
+        raise SkipTest(f"requires {', '.join(missing)} (install with: pip install 'nerva-sympy[all]')")
+
+
+def slow(test):
+    """Mark a test as slow. Slow tests are skipped with pytest -m "not slow".
+
+    Without pytest installed (unittest), slow tests are run as usual.
+    """
+    try:
+        import pytest
+    except ImportError:
+        return test
+    return pytest.mark.slow(test)
+
+
+def require_backends(*backends: str) -> None:
+    """Skip the calling test module unless the given nerva backends and their frameworks are installed."""
+    require_modules(*[name for backend in backends for name in BACKEND_MODULES[backend]])
 
 def disable_gpu():
     """Force CPU-only execution across common frameworks."""
-    # Must be called before importing any frameworks
-    import nerva_jax.utilities
-    import nerva_tensorflow.utilities
-    import nerva_torch.utilities
-    nerva_jax.utilities.disable_gpu()
-    nerva_tensorflow.utilities.disable_gpu()
-    nerva_torch.utilities.disable_gpu()
+    # Must be called before importing any frameworks. Backends that are not installed are ignored.
+    for backend in ('jax', 'tensorflow', 'torch'):
+        if all(importlib.util.find_spec(name) is not None for name in BACKEND_MODULES[backend]):
+            module = importlib.import_module(f'nerva_{backend}.utilities')
+            module.disable_gpu()
 
 
 def to_float(x):
@@ -84,36 +120,42 @@ def check_numbers_equal(testcase: TestCase, operation, values):
         testcase.assertAlmostEqual(x0, x, delta=1e-5)
 
 
-def to_numpy(x: Union[sp.Matrix, np.ndarray, torch.Tensor, tf.Tensor, tf.Variable, jnp.ndarray]) -> np.ndarray:
+def to_numpy(x) -> np.ndarray:
+    """Convert a sympy matrix, numpy array, or torch/tensorflow/jax tensor to a numpy array."""
     if isinstance(x, sp.Matrix):
         return np.array(x.tolist(), dtype=np.float64)
     elif isinstance(x, np.ndarray):
         return x
-    elif isinstance(x, torch.Tensor):
+    # A tensor of a framework can only exist if that framework has been imported,
+    # so checking sys.modules avoids importing frameworks that are not needed.
+    torch = sys.modules.get('torch')
+    if torch is not None and isinstance(x, torch.Tensor):
         return x.detach().cpu().numpy()
-    elif isinstance(x, tf.Tensor):
+    tf = sys.modules.get('tensorflow')
+    if tf is not None and isinstance(x, (tf.Tensor, tf.Variable)):
         return x.numpy()
-    elif isinstance(x, tf.Variable):
-        return x.numpy()
-    elif isinstance(x, jnp.ndarray):
+    jax = sys.modules.get('jax')
+    if jax is not None and isinstance(x, jax.Array):
         return np.array(x)
-    else:
-        raise ValueError("Unsupported input type. Input must be one of sp.Matrix, np.ndarray, torch.Tensor, or tf.Tensor.")
+    raise ValueError("Unsupported input type. Input must be one of sp.Matrix, np.ndarray, torch.Tensor, tf.Tensor or jax.Array.")
 
 
 def to_sympy(X: np.ndarray) -> sp.Matrix:
     return sp.Matrix(X)
 
 
-def to_torch(X: np.ndarray) -> torch.Tensor:
+def to_torch(X: np.ndarray):
+    import torch
     return torch.Tensor(X)
 
 
-def to_tensorflow(X: np.ndarray) -> tf.Tensor:
+def to_tensorflow(X: np.ndarray):
+    import tensorflow as tf
     return tf.convert_to_tensor(X)
 
 
-def to_jax(X: np.ndarray) -> jnp.ndarray:
+def to_jax(X: np.ndarray):
+    import jax.numpy as jnp
     return jnp.array(X)
 
 

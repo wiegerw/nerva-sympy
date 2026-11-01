@@ -24,7 +24,7 @@ class TestBatchNormalizationDefinition(TestCase):
         gamma = matrix('gamma', 1, D)
 
         R = X - (ones(N, N) / N) * X
-        Sigma = diag(R.T * R).T / N
+        Sigma = columns_sum(hadamard(R, R)) / N
         mu = (ones(N).T * X) / N
         Z = hadamard(ones(N) * inv_sqrt(Sigma), R)
 

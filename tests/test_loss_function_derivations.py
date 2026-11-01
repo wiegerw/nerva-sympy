@@ -196,6 +196,19 @@ class TestLossFunctionDerivation(TestCase):
         self.assertTrue(f2.equals(f3))
         self.assertTrue(f3.equals(f4))
 
+    # The pseudo-Huber loss is used as a custom loss function in cross_framework/test_frameworks.py.
+    def test_pseudo_huber_loss(self):
+        K = 3
+        N = 2
+        delta = sp.Rational(1, 10)
+
+        Y = matrix('Y', N, K)
+        T = matrix('T', N, K)
+        E = Y - T
+        loss = elements_sum(delta ** 2 * (sqrt(ones(N, K) + square(E) / delta ** 2) - ones(N, K)))
+        DY = hadamard(E, inv_sqrt(ones(N, K) + square(E) / delta ** 2))
+        self.assertTrue(equal_matrices(gradient(loss, Y), DY))
+
 
 if __name__ == '__main__':
     import unittest

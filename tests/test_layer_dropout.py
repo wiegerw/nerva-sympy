@@ -9,7 +9,7 @@ from unittest import TestCase
 from nerva_sympy.activation_functions import *
 from nerva_sympy.matrix_operations import *
 
-from utilities import equal_matrices, matrix, squared_error
+from utilities import equal_matrices, matrix, squared_error, slow
 
 
 class TestDropoutLayers(TestCase):
@@ -87,6 +87,7 @@ class TestDropoutLayers(TestCase):
         self.assertTrue(equal_matrices(Db, Db1))
         self.assertTrue(equal_matrices(DX, DX1))
 
+    @slow
     def test_activation_dropout_layer(self):
         alpha = sp.symbols('alpha')
         for act in [LeakyReLUActivation(alpha), AllReLUActivation(alpha), HyperbolicTangentActivation(), SigmoidActivation()]:

@@ -35,7 +35,8 @@ Each backend has a dedicated PyPI package and GitHub repository:
 | `nerva-torch`       | PyTorch     | [nerva-torch](https://pypi.org/project/nerva-torch/)       | [repo](https://github.com/wiegerw/nerva-torch)          |
 | `nerva-sympy`       | SymPy       | [nerva-sympy](https://pypi.org/project/nerva-sympy/)       | [repo](https://github.com/wiegerw/nerva-sympy)          |
 
-> 📝 `nerva-sympy` depends on the other four packages, since it validates their implementations.
+> 📝 `nerva-sympy` itself only requires `numpy` and `sympy`. The other four packages are optional: they are only
+> needed to compare their numerical implementations with the symbolic reference (see [Running Tests](#-running-tests)).
 
 See the [nerva meta-repo](https://github.com/wiegerw/nerva) for an overview of all Python and C++ variants.
 
@@ -55,6 +56,14 @@ pip install .
 ```bash
 # Install directly from PyPI
 pip install nerva-sympy
+```
+
+The numerical backends can be installed as optional extras:
+
+```bash
+pip install "nerva-sympy[torch]"   # one backend: jax, numpy, tensorflow or torch
+pip install "nerva-sympy[all]"     # all four backends
+pip install "nerva-sympy[test]"    # pytest
 ```
 
 ### Example: Validate Softmax Backpropagation
@@ -86,48 +95,67 @@ assert equal_matrices(DZ, DZ1)
 
 ## 🧪 Running Tests
 
-Controls for output and verbosity
-- Individual test names (default): The helper script runs pytest with -v, so you see each test as it runs.
-- Suppress internal prints from tests: By default the test utilities do not print intermediate matrices/numbers. Set NERVA_TEST_VERBOSE=1 to enable those prints when needed.
-- Override pytest flags: Set NERVA_PYTEST_FLAGS to customize, e.g., NERVA_PYTEST_FLAGS="-ra -s" ./tests/run_all_tests.sh to also show print output from successful tests.
-- Unittest fallback: Uses -b (buffered) and -v by default.
+The test suite consists of three groups of tests, which need different packages:
 
+| Tests | What they check | Requirements |
+|-------|-----------------|--------------|
+| Symbolic tests (`test_derivatives.py`, `test_layer_*.py`, `test_*_derivations.py`, ...) | The matrix-form equations against symbolic differentiation | `numpy`, `sympy` |
+| Equation tests (`test_equations.py`) | The layer equations in the source code of each backend are identical to the validated SymPy equations | The source code of the backends (see below), no frameworks |
+| Cross-framework tests (`tests/cross_framework`) | The numerical results of the backends against SymPy and against each other | All four backends: `pip install "nerva-sympy[all]"`. Only run on request, see below |
 
+Test modules whose requirements are not installed are skipped, so the tests can be run with any subset of the backends.
+The cross-framework tests are not run by default. To run them, install all four backends and use
+`python tests/run_all_tests.py --run --cross-framework`, or `python -m pytest tests/cross_framework`.
 
-To run the test suite locally:
+A few symbolic tests take a long time; they are marked as `slow`. The helper script `tests/run_all_tests.py` skips
+them by default (add `--include-long` to run them), and with pytest they can be skipped with `-m "not slow"`.
 
-1) Install dependencies (pytest is optional but recommended for nicer output):
+The equation tests locate the source code of a backend in the following order:
+
+1. The environment variable `NERVA_<BACKEND>_LAYERS_FILE`, e.g. `NERVA_TORCH_LAYERS_FILE=/path/to/layers.py`.
+2. A sibling checkout, e.g. `../nerva-torch`.
+3. An installed package, e.g. `nerva_torch`. The framework does not need to be installed (`pip install --no-deps nerva-torch`).
+
+The test files that are shared by the four backends are generated from the templates in
+`templates/backend_tests`. Backend-specific behaviour lives in `tests/utilities.py` of each backend, which is not
+generated. The module `shapes_dataset.py` (a synthetic dataset that is used by the examples of the backends) is
+generated in the same way from `templates/backend_src`, and tested by `templates/backend_tests/test_shapes_dataset.py`. After changing a template, update the sibling checkouts of the backends with
+`python scripts/sync_backend_tests.py`; `python scripts/sync_backend_tests.py --check` reports differences (this is
+checked in CI).
+
+`cross_framework/test_frameworks.py` uses the synthetic shapes dataset of `nerva_numpy.shapes_dataset`, so no
+datasets need to be downloaded.
+
+To run the tests:
 
 ```bash
-pip install -r requirements.txt
-pip install pytest  # optional
+pip install ".[test]"
+python tests/run_all_tests.py --run
 ```
 
-2) Run all tests via the helper script (it adds src to PYTHONPATH automatically):
+The helper script uses pytest if it is installed, and falls back to unittest otherwise. It adds `src` to
+`PYTHONPATH`, so the tests use the local source code. Additional arguments are passed to the test runner:
 
 ```bash
-./tests/run_all_tests.sh
-```
-
-You can pass additional arguments to the underlying test runner, for example:
-
-```bash
-# Run only tests whose names match "jacobian"
-./tests/run_all_tests.sh -k "jacobian"
+# Run only tests whose names match "softmax"
+python tests/run_all_tests.py --run -k softmax
 
 # Run a specific test file, class, or test case (pytest syntax)
-./tests/run_all_tests.sh tests/test_softmax_functions.py::TestSoftmax::test_softmax
+python tests/run_all_tests.py --run tests/test_softmax_function_derivations.py::TestSoftmaxDerivation::test6
 ```
 
-If you prefer to run without the script or are on a platform without bash:
+The tests can also be run directly:
 
 ```bash
-# Using pytest
-python3 -m pytest -s tests
-
-# Or using unittest discovery
-python3 -m unittest discover -s tests -p "test_*.py" -v
+python -m pytest tests
+python -m unittest discover -s tests -p "test_*.py" -v
 ```
+
+Controls for output and verbosity:
+- Set `NERVA_TEST_VERBOSE=1` to print the intermediate matrices and numbers of the tests.
+- Set `NERVA_PYTEST_FLAGS` to override the pytest flags of the helper script, e.g. `NERVA_PYTEST_FLAGS="-ra -s"`.
+- Set `NERVA_CHECK_VERBOSE=v` or `vv` for more output from the equation tests.
+- Set `NERVA_TEST_SEED` to change the random seed of `cross_framework/test_frameworks.py` (default: 12345).
 
 ## 🧪 Validation Suite
 
@@ -137,24 +165,34 @@ Each test compares symbolic derivatives to the manually implemented backpropagat
 Available tests:
 
 - **Activation Functions**  
-  `test_activation_functions.py`,
-  `test_softmax_functions.py`, `test_softmax_function_derivations.py`  
-  Validates symbolic gradients for Sigmoid, ReLU, SReLU, etc.
+  `test_softmax_function_derivations.py`  
+  Validates symbolic gradients for softmax and log-softmax functions.
 
 - **Layer Derivatives**  
   `test_layer_linear.py`, `test_layer_softmax.py`, `test_layer_batch_normalization.py`, `test_layer_dropout.py`, `test_layer_srelu.py`, `test_layer_derivations.py`  
   Checks symbolic vs. manual backpropagation for individual layers.
 
 - **Loss Functions**  
-  `test_loss_functions.py`, `test_loss_function_derivations.py` Ensures correct gradient formulas for common loss functions.
+  `test_loss_function_derivations.py` Ensures correct gradient formulas for common loss functions.
 
 - **Supporting Operations**  
-  `test_matrix_operations.py`, `test_one_hot.py`, `test_derivatives.py`, `test_lemmas.py`  
+  `test_matrix_properties.py`, `test_derivatives.py`  
   Validates core symbolic building blocks.
 
-Note on the cross-framework consistency test (tests/test_frameworks.py):
+- **Cross-framework tests** (in `tests/cross_framework`, only run on request)  
+  `test_activation_functions.py`, `test_softmax_functions.py`, `test_loss_functions.py`, `test_matrix_operations.py`,
+  `test_one_hot.py`, `test_frameworks.py`  
+  Compare the numerical backends with SymPy and with each other.
+
+- **Implementation Equations**  
+  `test_equations.py`  
+  Checks that the layer equations in the source code of the backends match the validated SymPy equations.
+
+Note on the cross-framework consistency test (tests/cross_framework/test_frameworks.py):
 - The test compares intermediates (X, Y, DY, T) across JAX, NumPy, TensorFlow and PyTorch while performing multiple SGD steps.
-- Currently, the test uses the AbsoluteError loss, which is not differentiable at 0. This sometimes causes the test to fail, even when all implementations are correct.
+- It uses a custom pseudo-Huber loss function. Unlike the absolute error loss that was used before, its gradient is
+  continuous, so tiny floating point differences between the frameworks cannot flip the sign of the gradient.
+  The gradient is validated symbolically in `test_loss_function_derivations.py`.
 
 ---
 

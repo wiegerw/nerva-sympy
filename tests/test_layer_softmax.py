@@ -9,7 +9,7 @@ from unittest import TestCase
 from nerva_sympy.matrix_operations import *
 from nerva_sympy.softmax_functions import *
 
-from utilities import equal_matrices, matrix, squared_error
+from utilities import equal_matrices, matrix, squared_error, slow
 
 
 class TestSoftmaxLayers(TestCase):
@@ -53,6 +53,7 @@ class TestSoftmaxLayers(TestCase):
         DZ1 = gradient(loss(Y), z)
         self.assertTrue(equal_matrices(DZ, DZ1))
 
+    @slow
     def test_softmax_layer(self):
         self._test_softmax_layer(D=3, K=2, N=2, loss = elements_sum)
         self._test_softmax_layer(D=2, K=3, N=2, loss = elements_sum)
@@ -99,6 +100,7 @@ class TestSoftmaxLayers(TestCase):
         DZ1 = gradient(loss(Y), z)
         self.assertTrue(equal_matrices(DZ, DZ1))
 
+    @slow
     def test_log_softmax_layer(self):
         self._test_log_softmax_layer(D=3, K=2, N=2, loss = elements_sum)
         self._test_log_softmax_layer(D=2, K=3, N=2, loss = elements_sum)

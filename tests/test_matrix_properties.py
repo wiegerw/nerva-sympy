@@ -18,7 +18,7 @@ class TestMatrixProperties(TestCase):
         X = matrix('X', m, n)
         Y = matrix('Y', m, n)
         Z1 = join_columns([X.col(j) * X.col(j).T * Y.col(j) for j in range(n)])
-        Z2 = hadamard(X, ones(m) * diag(X.T * Y).T)
+        Z2 = hadamard(X, ones(m) * columns_sum(hadamard(X, Y)))
         self.assertTrue(Z1.equals(Z2))
 
     def test_property2(self):
@@ -27,7 +27,7 @@ class TestMatrixProperties(TestCase):
         X = matrix('X', m, n)
         Y = matrix('Y', m, n)
         Z1 = join_columns([ones(m) * X.col(j).T * Y.col(j) for j in range(n)])
-        Z2 = ones(m) * diag(X.T * Y).T
+        Z2 = ones(m) * columns_sum(hadamard(X, Y))
         self.assertTrue(Z1.equals(Z2))
 
     def test_property3(self):
