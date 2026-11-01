@@ -114,6 +114,12 @@ The equation tests locate the source code of a backend in the following order:
 2. A sibling checkout, e.g. `../nerva-torch`.
 3. An installed package, e.g. `nerva_torch`. The framework does not need to be installed (`pip install --no-deps nerva-torch`).
 
+The test files that are shared by the four backends are generated from the templates in
+`templates/backend_tests`. Backend-specific behaviour lives in `tests/utilities.py` of each backend, which is not
+generated. After changing a template, update the sibling checkouts of the backends with
+`python scripts/sync_backend_tests.py`; `python scripts/sync_backend_tests.py --check` reports differences (this is
+checked in CI).
+
 `test_frameworks.py` also needs the MNIST dataset in `data/mnist-flattened.npz`:
 
 ```bash

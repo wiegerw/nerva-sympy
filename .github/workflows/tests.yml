@@ -14,7 +14,8 @@ concurrency:
 
 jobs:
   # Checks that the layer equations in the source code of the backends match the
-  # validated SymPy equations, and runs the one-layer reference cases. The backends
+  # validated SymPy equations, runs the one-layer reference cases, and checks that
+  # the shared backend tests are in sync with templates/backend_tests. The backends
   # are checked out as siblings of nerva-sympy; their frameworks are not needed.
   equations:
     name: Equation checks
@@ -23,22 +24,17 @@ jobs:
       - uses: actions/checkout@v5
         with:
           path: nerva-sympy
-      - uses: actions/checkout@v5
-        with:
-          repository: wiegerw/nerva-numpy
-          path: nerva-numpy
-      - uses: actions/checkout@v5
-        with:
-          repository: wiegerw/nerva-jax
-          path: nerva-jax
-      - uses: actions/checkout@v5
-        with:
-          repository: wiegerw/nerva-tensorflow
-          path: nerva-tensorflow
-      - uses: actions/checkout@v5
-        with:
-          repository: wiegerw/nerva-torch
-          path: nerva-torch
+      # Use the backend branch with the same name as this branch if it exists, and main otherwise,
+      # so that related changes in several repositories are tested together.
+      - name: Check out the backends
+        run: |
+          branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          for backend in numpy jax tensorflow torch; do
+            url="https://github.com/wiegerw/nerva-$backend"
+            if git ls-remote --exit-code --heads "$url" "$branch" > /dev/null; then ref="$branch"; else ref=main; fi
+            echo "nerva-$backend: $ref"
+            git clone --quiet --depth 1 --branch "$ref" "$url" "nerva-$backend"
+          done
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
@@ -48,6 +44,8 @@ jobs:
           python -m pip install "./nerva-sympy[test]"
       - name: Run tests
         run: python -m pytest nerva-sympy/tests/test_equations.py nerva-sympy/tests/test_one_layer.py -ra
+      - name: Check that the shared backend tests are in sync with the templates
+        run: python nerva-sympy/scripts/sync_backend_tests.py --check
 
   # Runs the symbolic tests with only numpy and sympy installed. The cross-framework
   # tests are skipped, because they need all four backends, and so are the slow tests.
