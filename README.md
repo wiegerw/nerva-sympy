@@ -119,7 +119,7 @@ The equation tests locate the source code of a backend in the following order:
 The test files that are shared by the four backends are generated from the templates in
 `templates/backend_tests`. Backend-specific behaviour lives in `tests/utilities.py` of each backend, which is not
 generated. The module `shapes_dataset.py` (a synthetic dataset that is used by the examples of the backends) is
-generated in the same way from `templates/backend_src`. After changing a template, update the sibling checkouts of the backends with
+generated in the same way from `templates/backend_src`, and tested by `templates/backend_tests/test_shapes_dataset.py`. After changing a template, update the sibling checkouts of the backends with
 `python scripts/sync_backend_tests.py`; `python scripts/sync_backend_tests.py --check` reports differences (this is
 checked in CI).
 
