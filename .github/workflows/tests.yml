@@ -20,26 +20,26 @@ jobs:
     name: Equation checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: nerva-sympy
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: wiegerw/nerva-numpy
           path: nerva-numpy
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: wiegerw/nerva-jax
           path: nerva-jax
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: wiegerw/nerva-tensorflow
           path: nerva-tensorflow
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           repository: wiegerw/nerva-torch
           path: nerva-torch
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
       - name: Install
@@ -56,8 +56,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
       - name: Install
